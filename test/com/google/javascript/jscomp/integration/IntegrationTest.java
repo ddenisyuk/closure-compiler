@@ -2339,7 +2339,7 @@ public final class IntegrationTest extends IntegrationTestCase {
             + "f.prototype.bar = 3; f.prototype.Baz = 3;";
     String all =
         "function f() { return this.c + this['bar'] + this.a; }"
-            + "f.prototype.b = 3; f.prototype.a = 3;";
+            + "f.prototype.bar = 3; f.prototype.a = 3;";
     testSame(options, code);
     options.setPropertyRenaming(PropertyRenamingPolicy.ALL_UNQUOTED);
     test(options, code, all);
@@ -2349,7 +2349,7 @@ public final class IntegrationTest extends IntegrationTestCase {
   public void testConvertToDottedProperties() {
     CompilerOptions options = createCompilerOptions();
     String code = "function f() { return this['bar']; } f.prototype.bar = 3;";
-    String expected = "function f() { return this.bar; } f.prototype.a = 3;";
+    String expected = "function f() { return this.bar; } f.prototype.bar = 3;";
     testSame(options, code);
 
     options.convertToDottedProperties = true;

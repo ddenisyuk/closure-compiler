@@ -546,11 +546,11 @@ public final class CommandLineRunnerTest {
             + "window['f']['bar'] = window['f'].bar;"
             + "use(window['f'].a)",
         "function a(){ this.a = 0; }"
-            + "a.prototype.b = function(){ this.a++; return 10; };"
-            + "a.prototype.c = function(){ var b=this.b(); this.a += b + 3; };"
+            + "a.prototype.inc = function(){ this.a++; return 10; };"
+            + "a.prototype.bar = function(){ var b=this.inc(); this.a += b + 3; };"
             + "window.f = new a;"
-            + "window.f.inc = window.f.b;"
-            + "window.f.bar = window.f.c;"
+            + "window.f.inc = window.f.inc;"
+            + "window.f.bar = window.f.bar;"
             + "use(window.f.a);");
   }
 

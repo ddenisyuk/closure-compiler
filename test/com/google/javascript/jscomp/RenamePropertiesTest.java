@@ -190,7 +190,7 @@ public final class RenamePropertiesTest extends CompilerTestCase {
     // The correct way to call the quoted 'getFoo' method is: bar['getFoo']().
     test(
         "Bar.prototype = {'B': 0, 'getFoo': function(){}}; bar.getFoo();",
-        "Bar.prototype = {'B': 0, 'getFoo': function(){}}; bar.a();");
+        "Bar.prototype = {'B': 0, 'getFoo': function(){}}; bar.getFoo();");
   }
 
   @Test
@@ -221,7 +221,7 @@ public final class RenamePropertiesTest extends CompilerTestCase {
   public void testSamePropertyNameQuotedAndUnquoted() {
     test(
         "Bar.prototype.prop = function(){}; y = {'prop': 0};",
-        "Bar.prototype.a = function(){}; y = {'prop': 0};");
+        "Bar.prototype.prop = function(){}; y = {'prop': 0};");
   }
 
   @Test
