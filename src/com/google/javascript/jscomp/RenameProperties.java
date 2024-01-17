@@ -169,7 +169,7 @@ class RenameProperties implements CompilerPass {
     for (Node n : stringNodesToRename) {
       String oldName = n.getString();
       Property p = propertyMap.get(oldName);
-      if (p != null && p.newName != null) {
+      if (p != null && p.newName != null && !quotedNames.contains(oldName)) {
         checkState(oldName.equals(p.oldName));
         n.setString(p.newName);
         if (!p.newName.equals(oldName)) {
