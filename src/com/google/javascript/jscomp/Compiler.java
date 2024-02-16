@@ -1269,7 +1269,9 @@ public class Compiler extends AbstractCompiler implements ErrorHandler, SourceFi
         if (hasErrors()) {
           return;
         }
+        beforePass(pf.getName());
         pf.create(this).process(externsRoot, jsRoot);
+        afterPass(pf.getName());
       }
     } finally {
       stopTracer(t, "runTranspileOnlyPasses");
@@ -1572,7 +1574,7 @@ public class Compiler extends AbstractCompiler implements ErrorHandler, SourceFi
   }
 
   @Override
-  void markFeatureNotAllowed(FeatureSet.Feature feature) {
+  void markFeatureNotAllowed(Feature feature) {
     this.allowableFeatures = this.allowableFeatures.without(feature);
   }
 

@@ -18,7 +18,6 @@ package com.google.javascript.jscomp;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
-import static com.google.common.truth.Truth8.assertThat;
 import static com.google.javascript.jscomp.base.JSCompStrings.lines;
 import static java.util.Collections.shuffle;
 import static org.junit.Assert.assertThrows;
