@@ -306,6 +306,10 @@ class RenameProperties implements CompilerPass {
             quotedNames.add(child.getString());
           }
           break;
+        case STRINGLIT:
+          // do not rename props with the names found as literals
+          quotedNames.add(n.getString());
+          break;
         case CALL: {
           // We replace property renaming function calls with a string
           // containing the renamed property.
