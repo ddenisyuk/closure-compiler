@@ -409,6 +409,9 @@ class RemoveUnusedCode implements CompilerPass {
     Node parent = n.getParent();
     Token type = n.getToken();
     switch (type) {
+      case STRINGLIT:
+        markPropertyNameAsPinned(n.getString());
+        break;
       case CATCH:
         traverseCatch(n, scope);
         break;
