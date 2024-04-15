@@ -35,6 +35,8 @@ import com.google.javascript.jscomp.DependencyOptions;
 import com.google.javascript.jscomp.DiagnosticGroups;
 import com.google.javascript.jscomp.JSChunk;
 import com.google.javascript.jscomp.ModuleIdentifier;
+import com.google.javascript.jscomp.PolymerExportPolicy;
+import com.google.javascript.jscomp.PropertyRenamingPolicy;
 import com.google.javascript.jscomp.SourceFile;
 import com.google.javascript.jscomp.VariableRenamingPolicy;
 import com.google.javascript.jscomp.WarningLevel;
@@ -83,10 +85,7 @@ public final class TypedAstIntegrationTest extends IntegrationTestCase {
 
     Compiler compiler = compileTypedAstShards(options);
 
-    Node expectedRoot = parseExpectedCode("alert(10);");
-    assertNode(compiler.getRoot().getSecondChild())
-        .usingSerializer(compiler::toSource)
-        .isEqualTo(expectedRoot);
+    assertCompiledCodeEquals(compiler, "alert(10);");
   }
 
   @Test
@@ -104,10 +103,7 @@ public final class TypedAstIntegrationTest extends IntegrationTestCase {
 
     Compiler compiler = compileTypedAstShards(options);
 
-    Node expectedRoot = parseExpectedCode("", "alert(10);");
-    assertNode(compiler.getRoot().getSecondChild())
-        .usingSerializer(compiler::toSource)
-        .isEqualTo(expectedRoot);
+    assertCompiledCodeEquals(compiler, "", "alert(10);");
   }
 
   @Test
@@ -125,12 +121,8 @@ public final class TypedAstIntegrationTest extends IntegrationTestCase {
     options.setClosurePass(true);
 
     Compiler compiler = compileTypedAstShards(options);
-    Node expectedRoot =
-        parseExpectedCode(
-            "var $jscomp$scope$1954846972$0$x=3;", "var $jscomp$scope$1954846973$0$x=4");
-    assertNode(compiler.getRoot().getSecondChild())
-        .usingSerializer(compiler::toSource)
-        .isEqualTo(expectedRoot);
+    assertCompiledCodeEquals(
+        compiler, "var $jscomp$scope$1954846972$0$x=3;", "var $jscomp$scope$1954846973$0$x=4");
   }
 
   @Test
@@ -152,10 +144,7 @@ public final class TypedAstIntegrationTest extends IntegrationTestCase {
 
     Compiler compiler = compileTypedAstShards(options);
 
-    Node expectedRoot = parseExpectedCode("", "", "alert('lib1'); alert('lib2')");
-    assertNode(compiler.getRoot().getSecondChild())
-        .usingSerializer(compiler::toSource)
-        .isEqualTo(expectedRoot);
+    assertCompiledCodeEquals(compiler, "", "", "alert('lib1'); alert('lib2')");
   }
 
   @Test
@@ -178,10 +167,7 @@ public final class TypedAstIntegrationTest extends IntegrationTestCase {
 
     Compiler compiler = compileTypedAstShards(options);
 
-    Node expectedRoot = parseExpectedCode("", "", "alert('lib1'); alert('lib2')");
-    assertNode(compiler.getRoot().getSecondChild())
-        .usingSerializer(compiler::toSource)
-        .isEqualTo(expectedRoot);
+    assertCompiledCodeEquals(compiler, "", "", "alert('lib1'); alert('lib2')");
   }
 
   @Test
@@ -250,10 +236,7 @@ public final class TypedAstIntegrationTest extends IntegrationTestCase {
 
     Compiler compiler = compileTypedAstShards(options);
 
-    Node expectedRoot = parseExpectedCode("", "", "alert('lib1'); alert('lib2')");
-    assertNode(compiler.getRoot().getSecondChild())
-        .usingSerializer(compiler::toSource)
-        .isEqualTo(expectedRoot);
+    assertCompiledCodeEquals(compiler, "", "", "alert('lib1'); alert('lib2')");
   }
 
   @Test
@@ -280,17 +263,14 @@ public final class TypedAstIntegrationTest extends IntegrationTestCase {
 
     Compiler compiler = compileTypedAstShards(options);
 
-    Node expectedRoot =
-        parseExpectedCode(
-            lines(
-                "class a {", //
-                "constructor() { this.foo = 1; }",
-                "}",
-                "alert(new a());"),
-            "");
-    assertNode(compiler.getRoot().getSecondChild())
-        .usingSerializer(compiler::toSource)
-        .isEqualTo(expectedRoot);
+    assertCompiledCodeEquals(
+        compiler,
+        lines(
+            "class a {", //
+            "constructor() { this.foo = 1; }",
+            "}",
+            "alert(new a());"),
+        "");
   }
 
   @Test
@@ -325,14 +305,11 @@ public final class TypedAstIntegrationTest extends IntegrationTestCase {
 
     Compiler compiler = compileTypedAstShards(options);
 
-    Node expectedRoot =
-        parseExpectedCode(
-            lines(
-                "class a {}", //
-                "alert(new a());"));
-    assertNode(compiler.getRoot().getSecondChild())
-        .usingSerializer(compiler::toSource)
-        .isEqualTo(expectedRoot);
+    assertCompiledCodeEquals(
+        compiler,
+        lines(
+            "class a {}", //
+            "alert(new a());"));
   }
 
   @Test
@@ -364,10 +341,7 @@ public final class TypedAstIntegrationTest extends IntegrationTestCase {
               "}"),
           "var $lib2Var$$ = 10; $lib1$$();"
         };
-    Node expectedRoot = parseExpectedCode(expected);
-    assertNode(compiler.getRoot().getSecondChild())
-        .usingSerializer(compiler::toSource)
-        .isEqualTo(expectedRoot);
+    assertCompiledCodeEquals(compiler, expected);
   }
 
   @Test
@@ -394,11 +368,7 @@ public final class TypedAstIntegrationTest extends IntegrationTestCase {
 
     Compiler compiler = compileTypedAstShards(options);
 
-    Node expectedRoot =
-        parseExpectedCode("lateDefinedVar;", "var lateDefinedVar; var $normalVar$$;");
-    assertNode(compiler.getRoot().getSecondChild())
-        .usingSerializer(compiler::toSource)
-        .isEqualTo(expectedRoot);
+    assertCompiledCodeEquals(compiler, "lateDefinedVar;", "var lateDefinedVar; var $normalVar$$;");
   }
 
   @Test
@@ -421,10 +391,7 @@ public final class TypedAstIntegrationTest extends IntegrationTestCase {
 
     Compiler compiler = compileTypedAstShards(options);
 
-    Node expectedRoot = parseExpectedCode("takeCoord({x: 1, y: 2});");
-    assertNode(compiler.getRoot().getSecondChild())
-        .usingSerializer(compiler::toSource)
-        .isEqualTo(expectedRoot);
+    assertCompiledCodeEquals(compiler, "takeCoord({x: 1, y: 2});");
   }
 
   @Test
@@ -447,10 +414,7 @@ public final class TypedAstIntegrationTest extends IntegrationTestCase {
 
     Compiler compiler = compileTypedAstShards(options);
 
-    Node expectedRoot = parseExpectedCode("ns.a = 2; console.log(ns.x);console.log(ns.a);");
-    assertNode(compiler.getRoot().getSecondChild())
-        .usingSerializer(compiler::toSource)
-        .isEqualTo(expectedRoot);
+    assertCompiledCodeEquals(compiler, "ns.a = 2; console.log(ns.x);console.log(ns.a);");
   }
 
   @Test
@@ -480,10 +444,7 @@ public final class TypedAstIntegrationTest extends IntegrationTestCase {
 
     Compiler compiler = compileTypedAstShards(options);
 
-    Node expectedRoot = parseExpectedCode("foo.bar");
-    assertNode(compiler.getRoot().getSecondChild())
-        .usingSerializer(compiler::toSource)
-        .isEqualTo(expectedRoot);
+    assertCompiledCodeEquals(compiler, "foo.bar");
   }
 
   @Test
@@ -506,10 +467,7 @@ public final class TypedAstIntegrationTest extends IntegrationTestCase {
 
     Compiler compiler = compileTypedAstShards(options);
 
-    Node expectedRoot = parseExpectedCode("foo.bar");
-    assertNode(compiler.getRoot().getSecondChild())
-        .usingSerializer(compiler::toSource)
-        .isEqualTo(expectedRoot);
+    assertCompiledCodeEquals(compiler, "foo.bar");
   }
 
   @Test
@@ -523,10 +481,7 @@ public final class TypedAstIntegrationTest extends IntegrationTestCase {
 
     Compiler compiler = compileTypedAstShards(options);
 
-    Node expectedRoot = parseExpectedCode("");
-    assertNode(compiler.getRoot().getSecondChild())
-        .usingSerializer(compiler::toSource)
-        .isEqualTo(expectedRoot);
+    assertCompiledCodeEquals(compiler, "");
   }
 
   @Test
@@ -543,10 +498,7 @@ public final class TypedAstIntegrationTest extends IntegrationTestCase {
 
     Compiler compiler = compileTypedAstShards(options);
 
-    Node expectedRoot = parseExpectedCode("(/abc/gi).exec(''); console.log(RegExp.$1);");
-    assertNode(compiler.getRoot().getSecondChild())
-        .usingSerializer(compiler::toSource)
-        .isEqualTo(expectedRoot);
+    assertCompiledCodeEquals(compiler, "(/abc/gi).exec(''); console.log(RegExp.$1);");
   }
 
   @Test
@@ -570,10 +522,7 @@ public final class TypedAstIntegrationTest extends IntegrationTestCase {
 
     Compiler compiler = compileTypedAstShards(options);
 
-    Node expectedRoot = parseExpectedCode("");
-    assertNode(compiler.getRoot().getSecondChild())
-        .usingSerializer(compiler::toSource)
-        .isEqualTo(expectedRoot);
+    assertCompiledCodeEquals(compiler, "");
   }
 
   @Test
@@ -590,15 +539,12 @@ public final class TypedAstIntegrationTest extends IntegrationTestCase {
 
     Compiler compiler = compileTypedAstShards(options);
 
-    Node expectedRoot =
-        parseExpectedCode(
-            lines(
-                "function f() {} ",
-                "function g(a) {} g['$inject']=['a'];",
-                "var b = function f(a, b, c) {}; b['$inject']=['a', 'b', 'c']"));
-    assertNode(compiler.getRoot().getSecondChild())
-        .usingSerializer(compiler::toSource)
-        .isEqualTo(expectedRoot);
+    assertCompiledCodeEquals(
+        compiler,
+        lines(
+            "function f() {} ",
+            "function g(a) {} g['$inject']=['a'];",
+            "var b = function f(a, b, c) {}; b['$inject']=['a', 'b', 'c']"));
   }
 
   @Test
@@ -646,10 +592,7 @@ public final class TypedAstIntegrationTest extends IntegrationTestCase {
               + "Foo.prototype.bar=JSCompiler_stubMethod(0); var x=new Foo;",
           "Foo.prototype.bar=JSCompiler_unstubMethod(0,function(){}); x.bar()",
         };
-    Node expectedRoot = parseExpectedCode(expected);
-    assertNode(compiler.getRoot().getSecondChild())
-        .usingSerializer(compiler::toSource)
-        .isEqualTo(expectedRoot);
+    assertCompiledCodeEquals(compiler, expected);
   }
 
   @Test
@@ -671,6 +614,160 @@ public final class TypedAstIntegrationTest extends IntegrationTestCase {
     Exception ex =
         assertThrows(IllegalArgumentException.class, () -> compileTypedAstShards(options));
     assertThat(ex).hasMessageThat().contains("mode=PRUNE");
+  }
+
+  private static final String EXPORT_PROPERTY_DEF =
+      lines(
+          "goog.exportProperty = function(object, publicName, symbol) {",
+          "  object[publicName] = symbol;",
+          "};");
+
+  @Test
+  public void testPolymerExportPolicyExportAllClassBased() throws IOException {
+    CompilerOptions options = new CompilerOptions();
+    options.setRenamingPolicy(VariableRenamingPolicy.ALL, PropertyRenamingPolicy.ALL_UNQUOTED);
+    options.setRemoveUnusedPrototypeProperties(true);
+    options.setLanguageOut(LanguageMode.ECMASCRIPT5);
+    options.setDependencyOptions(DependencyOptions.none());
+
+    SourceFile closureBase =
+        SourceFile.fromCode("base.js", "/** @const */ var goog = {};" + EXPORT_PROPERTY_DEF);
+    precompileLibrary(closureBase);
+    precompileLibrary(
+        typeSummary(closureBase),
+        extern(new TestExternsBuilder().addString().addPolymer().build()),
+        code(
+            lines(
+                "class FooElement extends PolymerElement {",
+                "  static get properties() {",
+                "    return {",
+                "      longUnusedProperty: String,",
+                "    }",
+                "  }",
+                "  longUnusedMethod() {",
+                "    return this.longUnusedProperty;",
+                "  }",
+                "}")));
+
+    Compiler compiler = compileTypedAstShards(options);
+    String source = compiler.toSource();
+
+    // If we see these identifiers anywhere in the output source, we know that we successfully
+    // protected it against removal and renaming.
+    assertThat(source).contains("longUnusedProperty");
+    assertThat(source).contains("longUnusedMethod");
+  }
+
+  @Test
+  public void testPolymerExportPolicyExportAllClassBased_inGoogModule() throws IOException {
+    CompilerOptions options = new CompilerOptions();
+    options.setRenamingPolicy(VariableRenamingPolicy.ALL, PropertyRenamingPolicy.ALL_UNQUOTED);
+    options.setRemoveUnusedPrototypeProperties(true);
+    options.setLanguageOut(LanguageMode.ECMASCRIPT5);
+    options.setDependencyOptions(DependencyOptions.none());
+
+    SourceFile closureBase =
+        SourceFile.fromCode(
+            "base.js",
+            "/** @const */ var goog = {}; goog.module = function(s) {};" + EXPORT_PROPERTY_DEF);
+    precompileLibrary(closureBase);
+    precompileLibrary(
+        typeSummary(closureBase),
+        extern(new TestExternsBuilder().addString().addPolymer().build()),
+        code(
+            lines(
+                "goog.module('fooElement');",
+                "class FooElement extends PolymerElement {",
+                "  static get properties() {",
+                "    return {",
+                "      longUnusedProperty: String,",
+                "    }",
+                "  }",
+                "  longUnusedMethod() {",
+                "    return this.longUnusedProperty;",
+                "  }",
+                "}")));
+
+    Compiler compiler = compileTypedAstShards(options);
+    String source = compiler.toSource();
+
+    // If we see these identifiers anywhere in the output source, we know that we successfully
+    // protected it against removal and renaming.
+    assertThat(source).contains("longUnusedProperty");
+    assertThat(source).contains("longUnusedMethod");
+  }
+
+  @Test
+  public void testPolymer_propertiesOnLegacyElementNotRenamed() throws IOException {
+    CompilerOptions options = new CompilerOptions();
+    options.setRenamingPolicy(VariableRenamingPolicy.ALL, PropertyRenamingPolicy.ALL_UNQUOTED);
+    options.setRemoveUnusedPrototypeProperties(true);
+    options.setLanguageOut(LanguageMode.ECMASCRIPT5);
+    options.setDependencyOptions(DependencyOptions.none());
+
+    SourceFile closureBase =
+        SourceFile.fromCode("base.js", "/** @const */ var goog = {};" + EXPORT_PROPERTY_DEF);
+    precompileLibrary(closureBase);
+    precompileLibrary(
+        typeSummary(closureBase),
+        extern(new TestExternsBuilder().addString().addPolymer().build()),
+        code(
+            lines(
+                "Polymer({",
+                "  is: \"foo-element\",",
+                "  properties: {",
+                "    longUnusedProperty: String,",
+                "  },",
+                "  longUnusedMethod: function() {",
+                "    return this.longUnusedProperty;",
+                "  },",
+                "});")));
+
+    Compiler compiler = compileTypedAstShards(options);
+    String source = compiler.toSource();
+
+    // If we see these identifiers anywhere in the output source, we know that we successfully
+    // protected them against removal and renaming.
+    assertThat(source).contains("longUnusedProperty");
+    assertThat(source).contains("longUnusedMethod");
+  }
+
+  @Test
+  public void testPolymer_propertiesOnLegacyElementNotRenamed_inGoogModule() throws IOException {
+    CompilerOptions options = new CompilerOptions();
+    options.setRenamingPolicy(VariableRenamingPolicy.ALL, PropertyRenamingPolicy.ALL_UNQUOTED);
+    options.setRemoveUnusedPrototypeProperties(true);
+    options.setLanguageOut(LanguageMode.ECMASCRIPT5);
+    options.setDependencyOptions(DependencyOptions.none());
+
+    SourceFile closureBase =
+        SourceFile.fromCode(
+            "base.js",
+            "/** @const */ var goog = {}; goog.module = function(s) {};" + EXPORT_PROPERTY_DEF);
+    precompileLibrary(closureBase);
+    precompileLibrary(
+        typeSummary(closureBase),
+        extern(new TestExternsBuilder().addString().addPolymer().build()),
+        code(
+            lines(
+                "goog.module('fooElement');",
+                "Polymer({",
+                "  is: \"foo-element\",",
+                "  properties: {",
+                "    longUnusedProperty: String,",
+                "  },",
+                "  longUnusedMethod: function() {",
+                "    return this.longUnusedProperty;",
+                "  },",
+                "});")));
+
+    Compiler compiler = compileTypedAstShards(options);
+    String source = compiler.toSource();
+
+    // If we see these identifiers anywhere in the output source, we know that we successfully
+    // protected them against removal and renaming.
+    assertThat(source).contains("longUnusedProperty");
+    assertThat(source).contains("longUnusedMethod");
   }
 
   // use over 'compileTypedAstShards' if you want to validate reported errors or warnings in your
@@ -741,6 +838,8 @@ public final class TypedAstIntegrationTest extends IntegrationTestCase {
     options.setProtectHiddenSideEffects(true);
     options.setTypedAstOutputFile(typedAstPath);
     options.setClosurePass(true);
+    options.setPolymerVersion(2);
+    options.setPolymerExportPolicy(PolymerExportPolicy.EXPORT_ALL);
 
     ImmutableList.Builder<SourceFile> externs = ImmutableList.builder();
     ImmutableList.Builder<SourceFile> sources = ImmutableList.builder();
@@ -776,9 +875,12 @@ public final class TypedAstIntegrationTest extends IntegrationTestCase {
     return new SequenceInputStream(Collections.enumeration(inputShards));
   }
 
-  private Node parseExpectedCode(String... files) {
-    // pass empty CompilerOptions; CompilerOptions only matters for CommonJS module parsing
-    CompilerOptions options = new CompilerOptions();
-    return super.parseExpectedCode(files, options);
+  private void assertCompiledCodeEquals(Compiler compiler, String... expected) {
+    // Passing the default CompilerOptions to parse the expected code is OK, since it configures the
+    // parser to support all input languages.
+    Node expectedRoot = super.parseExpectedCode(expected, new CompilerOptions());
+    assertNode(compiler.getRoot().getSecondChild())
+        .usingSerializer(compiler::toSource)
+        .isEqualTo(expectedRoot);
   }
 }

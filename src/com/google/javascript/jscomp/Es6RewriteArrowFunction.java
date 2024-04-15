@@ -16,6 +16,7 @@
 package com.google.javascript.jscomp;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.google.javascript.jscomp.parsing.parser.FeatureSet;
@@ -102,11 +103,7 @@ public class Es6RewriteArrowFunction implements NodeTraversal.Callback, Compiler
     n.setIsArrowFunction(false);
 
     Node body = n.getLastChild();
-    if (!body.isBlock()) {
-      body.detach();
-      body = IR.block(IR.returnNode(body)).srcrefTreeIfMissing(body);
-      n.addChildToBack(body);
-    }
+    checkState(body.isBlock(), "Arrow function body must be a block after normalization");
 
     ThisAndArgumentsReferenceUpdater updater =
         new ThisAndArgumentsReferenceUpdater(compiler, context, astFactory);
@@ -126,7 +123,7 @@ public class Es6RewriteArrowFunction implements NodeTraversal.Callback, Compiler
       makeTreeNonIndexable(thisVar);
 
       if (context.lastSuperStatement == null) {
-        scopeBody.addChildToFront(thisVar);
+        insertVarDeclaration(thisVar, scopeBody);
       } else {
         // Not safe to reference `this` until after super() has been called.
         // TODO(bradfordcsmith): Some complex cases still aren't covered, like
@@ -137,12 +134,30 @@ public class Es6RewriteArrowFunction implements NodeTraversal.Callback, Compiler
     }
 
     if (context.needsArgumentsVar) {
-      Node argumentsVar = astFactory.createArgumentsAliasDeclaration(ARGUMENTS_VAR);
+      Node argumentsVar =
+          astFactory.createArgumentsAliasDeclaration(ARGUMENTS_VAR + "$" + context.uniqueId);
       NodeUtil.addFeatureToScript(t.getCurrentScript(), Feature.CONST_DECLARATIONS, compiler);
-      scopeBody.addChildToFront(argumentsVar);
+
+      insertVarDeclaration(argumentsVar, scopeBody);
 
       argumentsVar.srcrefTreeIfMissing(scopeBody);
       compiler.reportChangeToEnclosingScope(argumentsVar);
+    }
+  }
+
+  private void insertVarDeclaration(Node varDeclaration, Node scopeBody) {
+    if (scopeBody.getParent().isFunction()) {
+      // for functions, we must find the correct insertion point to preserve normalization
+      Node insertBeforePoint =
+          NodeUtil.getInsertionPointAfterAllInnerFunctionDeclarations(scopeBody);
+      if (insertBeforePoint != null) {
+        varDeclaration.insertBefore(insertBeforePoint);
+      } else {
+        // functionBody only contains hoisted function declarations
+        scopeBody.addChildToBack(varDeclaration);
+      }
+    } else {
+      scopeBody.addChildToFront(varDeclaration);
     }
   }
 
@@ -248,7 +263,10 @@ public class Es6RewriteArrowFunction implements NodeTraversal.Callback, Compiler
       } else if (n.isName() && n.getString().equals("arguments")) {
         context.setNeedsArgumentsVar();
 
-        Node name = astFactory.createName(ARGUMENTS_VAR, AstFactory.type(n)).srcref(n);
+        Node name =
+            astFactory
+                .createName(ARGUMENTS_VAR + "$" + context.uniqueId, AstFactory.type(n))
+                .srcref(n);
         if (compiler.getOptions().preservesDetailedSourceInfo()) {
           name.setOriginalName("arguments");
         }

@@ -86,6 +86,7 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
         expected(
             lines(
                 "class C {", //
+                "  /** @nocollapse */ ",
                 "  static STATIC$BLOCK$0() {",
                 "    let x = 2;",
                 "  }",
@@ -104,6 +105,7 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
         expected(
             lines(
                 "class C {", //
+                "/** @nocollapse */ ",
                 "static STATIC$BLOCK$0() {",
                 "    let x = 2;",
                 "    this.y = x;",
@@ -124,18 +126,15 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
                 "}")),
         expected(
             lines(
-                "class B {",
-                "  static STATIC$FIELD$0$y() {",
-                "    return 3;",
-                "  }",
-                "}",
-                "B.y = B.STATIC$FIELD$0$y()",
+                "class B {}",
+                "B.y = 3;",
                 "class C extends B {", //
-                "  static STATIC$BLOCK$1() {",
+                "  /** @nocollapse */ ",
+                "  static STATIC$BLOCK$0() {",
                 "    let x = super.y;",
                 "  }",
                 "}",
-                "C.STATIC$BLOCK$1();"))); // uses `super`
+                "C.STATIC$BLOCK$0();"))); // uses `super`
 
     rewriteFieldOrBlockTest(
         srcs(
@@ -149,6 +148,7 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
         expected(
             lines(
                 "class C {", //
+                "  /** @nocollapse */ ",
                 "  static STATIC$BLOCK$0() {",
                 "    C.x = 2;",
                 "    const y = this.x;",
@@ -170,6 +170,7 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
             lines(
                 "var z = 1", //
                 "class C {",
+                "  /** @nocollapse */ ",
                 "  static STATIC$BLOCK$0() {",
                 "    let x = 2;",
                 "    var z$jscomp$1 = 3;",
@@ -190,18 +191,15 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
                 "};")),
         expected(
             lines(
-                "let C = class {",
-                "  static STATIC$FIELD$0$prop() {",
-                "    return 5;",
-                "  }",
-                "}",
-                "C.prop = C.STATIC$FIELD$0$prop();",
+                "let C = class {}",
+                "C.prop = 5;",
                 "let D = class extends C {",
-                "  static STATIC$BLOCK$1() {",
+                "  /** @nocollapse */ ",
+                "  static STATIC$BLOCK$0() {",
                 "    this.prop = 10;",
                 "  }",
                 "}",
-                "D.STATIC$BLOCK$1();"))); //
+                "D.STATIC$BLOCK$0();"))); //
 
     // TODO (user): This will be fixed by moving the RewriteClassMembers pass after
     // normalization, because normalization will split these two declarations into separate let
@@ -219,17 +217,14 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
                 "}")),
         expected(
             lines(
-                "let C = class {",
-                "  static STATIC$FIELD$0$prop() {",
-                "    return 5;",
-                "  }",
-                "}, D = class extends C {",
-                "  static STATIC$BLOCK$1() {",
+                "let C = class {}, D = class extends C {",
+                "  /** @nocollapse */ ",
+                "  static STATIC$BLOCK$0() {",
                 "    this.prop = 10;",
                 "  }",
                 "}",
-                "D.STATIC$BLOCK$1();",
-                "C.prop = C.STATIC$FIELD$0$prop();"))); // defines classes in the same let statement
+                "D.STATIC$BLOCK$0();",
+                "C.prop = 5;"))); // defines classes in the same let statement
   }
 
   @Test
@@ -255,27 +250,20 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
                 "var z = 1", //
                 "var COMPFIELD$0 = z;",
                 "class C {",
-                "  static STATIC$FIELD$1$x() {",
-                "    return 2;",
-                "  }",
-                "  static STATIC$BLOCK$2() {",
+                "  /** @nocollapse */ ",
+                "  static STATIC$BLOCK$1() {",
                 "    z = z + this.x;",
                 "  }",
-                "  static STATIC$FIELD$3() {",
-                "    return 3;",
-                "  }",
-                "  static STATIC$FIELD$4$w() {",
-                "    return 5;",
-                "  }",
-                "  static STATIC$BLOCK$5() {",
+                "  /** @nocollapse */ ",
+                "  static STATIC$BLOCK$2() {",
                 "    z = z + this.w;",
                 "   }",
                 "}",
-                "C.x = C.STATIC$FIELD$1$x();",
-                "C.STATIC$BLOCK$2();",
-                "C[COMPFIELD$0] = C.STATIC$FIELD$3();",
-                "C.w = C.STATIC$FIELD$4$w();",
-                "C.STATIC$BLOCK$5();"))); //
+                "C.x = 2;",
+                "C.STATIC$BLOCK$1();",
+                "C[COMPFIELD$0] = 3;",
+                "C.w = 5;",
+                "C.STATIC$BLOCK$2();"))); //
   }
 
   @Test
@@ -283,12 +271,14 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
     test(
         lines(
             "class A {", //
+            "  /** @suppress {partialAlias} */",
             "  b = 'word';",
             "  c = this.b;",
             "}"),
         lines(
             "class A {",
             "  constructor() {",
+            "    /** @suppress {partialAlias} */",
             "    this.b = 'word';",
             "    this.c = this.b;",
             "  }",
@@ -377,17 +367,15 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
         expected(
             lines(
                 "class C {", //
-                "  static STATIC$FIELD$0$x() {",
-                "    return 2;",
-                "  }",
-                "  static STATIC$FIELD$1$y() {",
+                "  /** @nocollapse */ ",
+                "  static STATIC$FIELD$0$y() {",
                 "    return () => {",
                 "      return this.x;",
                 "    };",
                 "  }",
                 "}",
-                "C.x = C.STATIC$FIELD$0$x();",
-                "C.y = C.STATIC$FIELD$1$y();")));
+                "C.x = 2;",
+                "C.y = C.STATIC$FIELD$0$y();")));
 
     rewriteFieldOrBlockTest(
         srcs(
@@ -400,16 +388,14 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
         expected(
             lines(
                 "class F {", //
-                "  static STATIC$FIELD$0$a() {",
-                "    return 'there';",
-                "  }",
-                "  static STATIC$FIELD$1$b() {",
+                "  /** @nocollapse */ ",
+                "  static STATIC$FIELD$0$b() {",
                 "    return this.c() + this.a;",
                 "  }",
                 "  static c() { return 'hi'; }",
                 "}",
-                "F.a = F.STATIC$FIELD$0$a();",
-                "F.b = F.STATIC$FIELD$1$b();")));
+                "F.a = 'there';",
+                "F.b = F.STATIC$FIELD$0$b();")));
   }
 
   @Test
@@ -439,6 +425,7 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
                 "  }",
                 "}",
                 "class Bar extends Foo {",
+                "  /** @nocollapse */ ",
                 "  static STATIC$FIELD$0$z() {",
                 "    return () => {",
                 "      return super.x() + 12 + super.y();",
@@ -456,19 +443,9 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
                 "}")),
         expected(
             lines(
-                "class Bar {",
-                "static STATIC$FIELD$0$a() {",
-                "    return {method1() {",
-                "    }};",
-                "  }",
-                "  static STATIC$FIELD$1$b() {",
-                "    return {method2() {",
-                "      super.method1();",
-                "    }};",
-                "  }",
-                "}",
-                "Bar.a = Bar.STATIC$FIELD$0$a();",
-                "Bar.b = Bar.STATIC$FIELD$1$b();")));
+                "class Bar {}",
+                "Bar.a = { method1() {} };",
+                "Bar.b = { method2() { super.method1(); } };")));
   }
 
   @Test
@@ -523,11 +500,8 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
                 "  constructor() {",
                 "    this[2] = testcode$classdecl$var0[1];",
                 "  }",
-                "  static STATIC$FIELD$0() {",
-                "    return 2;",
-                "  }",
                 "};",
-                "testcode$classdecl$var0[1] = testcode$classdecl$var0.STATIC$FIELD$0();",
+                "testcode$classdecl$var0[1] = 2;",
                 "/** @constructor */ ",
                 "let c = testcode$classdecl$var0;")));
 
@@ -544,11 +518,8 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
                 "  constructor() {",
                 "    this[2] = testcode$classdecl$var0[1];",
                 "  }",
-                "  static STATIC$FIELD$0() {",
-                "    return 2;",
-                "  }",
                 "};",
-                "testcode$classdecl$var0[1] = testcode$classdecl$var0.STATIC$FIELD$0();",
+                "testcode$classdecl$var0[1] = 2;",
                 "foo(testcode$classdecl$var0);")));
 
     rewriteFieldOrBlockTest(
@@ -592,12 +563,9 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
         expected(
             lines(
                 "class C {", //
-                "static STATIC$FIELD$0() {",
-                "    return 2;",
-                "  }",
                 "}",
                 "C['x'];",
-                "C['y'] = C.STATIC$FIELD$0();")));
+                "C['y'] = 2;")));
 
     rewriteFieldOrBlockTest(
         srcs(
@@ -610,15 +578,13 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
         expected(
             lines(
                 "class C {", //
+                "  /** @nocollapse */ ",
                 "  static STATIC$FIELD$0() {",
-                "    return 1;",
-                "  }",
-                "  static STATIC$FIELD$1() {",
                 "    return this[1];",
                 "  }",
                 "}",
-                "C[1] = C.STATIC$FIELD$0();",
-                "C[2] = C.STATIC$FIELD$1();")));
+                "C[1] = 1;",
+                "C[2] = C.STATIC$FIELD$0();")));
 
     rewriteFieldOrBlockTest(
         srcs(
@@ -631,15 +597,13 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
         expected(
             lines(
                 "const C = class {", //
+                "  /** @nocollapse */ ",
                 "  static STATIC$FIELD$0() {",
-                "    return 1;",
-                "  }",
-                "  static STATIC$FIELD$1() {",
                 "    return this[1];",
                 "  }",
                 "}",
-                "C[1] = C.STATIC$FIELD$0();",
-                "C[2] = C.STATIC$FIELD$1();")));
+                "C[1] = 1;",
+                "C[2] = C.STATIC$FIELD$0();")));
 
     rewriteFieldOrBlockTest(
         srcs(
@@ -652,15 +616,13 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
         expected(
             lines(
                 "const testcode$classdecl$var0 = class {", //
+                "  /** @nocollapse */ ",
                 "  static STATIC$FIELD$0() {",
-                "    return 1;",
-                "  }",
-                "  static STATIC$FIELD$1() {",
                 "    return this[1];",
                 "  }",
                 "}",
-                "testcode$classdecl$var0[1] = testcode$classdecl$var0.STATIC$FIELD$0();",
-                "testcode$classdecl$var0[2] = testcode$classdecl$var0.STATIC$FIELD$1();",
+                "testcode$classdecl$var0[1] = 1;",
+                "testcode$classdecl$var0[2] = testcode$classdecl$var0.STATIC$FIELD$0();",
                 "/** @constructor */",
                 "const C = testcode$classdecl$var0;")));
 
@@ -674,16 +636,9 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
                 "}")),
         expected(
             lines(
-                "const testcode$classdecl$var0 = class {",
-                "static STATIC$FIELD$0() {",
-                "    return 2;",
-                "  }",
-                "  static STATIC$FIELD$1() {",
-                "    return testcode$classdecl$var0[1];",
-                "  }",
-                "};",
-                "testcode$classdecl$var0[1] = testcode$classdecl$var0.STATIC$FIELD$0();",
-                "testcode$classdecl$var0[2] = testcode$classdecl$var0.STATIC$FIELD$1();",
+                "const testcode$classdecl$var0 = class {};",
+                "testcode$classdecl$var0[1] = 2;",
+                "testcode$classdecl$var0[2] = testcode$classdecl$var0[1];",
                 "/** @constructor */ ",
                 "let c = testcode$classdecl$var0;")));
 
@@ -696,16 +651,9 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
                 "})")),
         expected(
             lines(
-                "const testcode$classdecl$var0 = class {",
-                "  static STATIC$FIELD$0() {",
-                "    return 2;",
-                "  }",
-                "  static STATIC$FIELD$1() {",
-                "    return testcode$classdecl$var0[1];",
-                "  }",
-                "};",
-                "testcode$classdecl$var0[1] = testcode$classdecl$var0.STATIC$FIELD$0();",
-                "testcode$classdecl$var0[2] = testcode$classdecl$var0.STATIC$FIELD$1();",
+                "const testcode$classdecl$var0 = class {};",
+                "testcode$classdecl$var0[1] = 2;",
+                "testcode$classdecl$var0[2] = testcode$classdecl$var0[1];",
                 "foo(testcode$classdecl$var0);")));
 
     rewriteFieldOrBlockTest(
@@ -716,12 +664,8 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
                 "})")),
         expected(
             lines(
-                "const testcode$classdecl$var0 = class {",
-                "  static STATIC$FIELD$0() {",
-                "    return 1;",
-                "  }",
-                "};",
-                "testcode$classdecl$var0[1] = testcode$classdecl$var0.STATIC$FIELD$0();",
+                "const testcode$classdecl$var0 = class {};",
+                "testcode$classdecl$var0[1] = 1;",
                 "foo(testcode$classdecl$var0);")));
   }
 
@@ -800,15 +744,9 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
                 "  constructor() {",
                 "    this[COMPFIELD$0] = 'a'",
                 "  }",
-                "  static STATIC$FIELD$2$b() {",
-                "    return bar(3);",
-                "  }",
-                "  static STATIC$FIELD$3() {",
-                "    return bar(4);",
-                "  }",
                 "}",
-                "Foo.b = Foo.STATIC$FIELD$2$b();",
-                "Foo[COMPFIELD$1] = Foo.STATIC$FIELD$3();")));
+                "Foo.b = bar(3);",
+                "Foo[COMPFIELD$1] = bar(4);")));
 
     rewriteFieldOrBlockTest(
         srcs(
@@ -822,16 +760,9 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
             lines(
                 "let x = 'hello';",
                 "var COMPFIELD$0 = x;",
-                "class Foo {",
-                "static STATIC$FIELD$1$n() {",
-                "    return x = 5;",
-                "  }",
-                "  static STATIC$FIELD$2() {",
-                "    return 'world';",
-                "  }",
-                "}",
-                "Foo.n = Foo.STATIC$FIELD$1$n();",
-                "Foo[COMPFIELD$0] = Foo.STATIC$FIELD$2();")));
+                "class Foo {}",
+                "Foo.n = x = 5;",
+                "Foo[COMPFIELD$0] = 'world';")));
 
     rewriteFieldOrBlockTest(
         srcs(
@@ -859,17 +790,55 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
                 "    this[COMPFIELD$0];",
                 "    this[COMPFIELD$3] = 2;",
                 "  }",
-                "  static STATIC$FIELD$5$x() {",
-                "    return foo(6);",
-                "  }",
                 "  [COMPFIELD$1]() {}",
-                "  static STATIC$FIELD$6() {",
-                "    return foo(7);",
-                "  }",
                 "  get [COMPFIELD$4]() {}",
                 "}",
-                "Baz.x = Baz.STATIC$FIELD$5$x();",
-                "Baz[COMPFIELD$2] = Baz.STATIC$FIELD$6();")));
+                "Baz.x = foo(6);",
+                "Baz[COMPFIELD$2] = foo(7);")));
+
+    rewriteFieldOrBlockTest(
+        srcs(
+            lines(
+                "class Baz {",
+                "  z = 1;",
+                "  func(x) {",
+                "    x.a = 'y';",
+                "    return {",
+                "      [x.a]:'aa'", // computed property in an object literal remains unchanged
+                "    }",
+                "  }",
+                "}")),
+        expected(
+            lines(
+                "class Baz {",
+                "  constructor() {",
+                "    this.z = 1;",
+                "  }",
+                "  func(x) {",
+                "    x.a = 'y';",
+                "    return {",
+                "      [x.a]:'aa'",
+                "    }",
+                "  }",
+                "}")));
+
+    rewriteFieldOrBlockTest(
+        srcs(
+            lines(
+                "x.a = 'b';",
+                "y = { [x.a]:'aa' };", // computed property not in a class body
+                "class Baz {",
+                "  z = 1;",
+                "}")),
+        expected(
+            lines(
+                "x.a = 'b';",
+                "y = {[x.a]:'aa'};",
+                "class Baz {",
+                "  constructor() {",
+                "    this.z = 1;",
+                "  }",
+                "}")));
   }
 
   @Test
@@ -884,6 +853,7 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
         expected(
             lines(
                 "class C {", //
+                "  /** @nocollapse */ ",
                 "  static STATIC$BLOCK$0() {",
                 "  }",
                 "}",
@@ -901,6 +871,7 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
         expected(
             lines(
                 "class C {", //
+                "  /** @nocollapse */ ",
                 "  static STATIC$BLOCK$0() {",
                 "    let x = 2;",
                 "    const y = x;",
@@ -924,6 +895,7 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
         expected(
             lines(
                 "class C {", //
+                "  /** @nocollapse */ ",
                 "  static STATIC$BLOCK$0() {",
                 "    let x = 2;",
                 "    const y = x;",
@@ -957,9 +929,11 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
         expected(
             lines(
                 "class C {", //
+                "  /** @nocollapse */ ",
                 "  static STATIC$BLOCK$0() {",
                 "    let x = 2;",
                 "  }",
+                "  /** @nocollapse */ ",
                 "  static STATIC$BLOCK$1() {",
                 "    const y = x;",
                 "  }",
@@ -986,9 +960,11 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
         expected(
             lines(
                 "class C {", //
+                "  /** @nocollapse */ ",
                 "  static STATIC$BLOCK$0() {",
                 "    let x = 2;",
                 "  }",
+                "  /** @nocollapse */ ",
                 "  static STATIC$BLOCK$1() {",
                 "    const y = x;",
                 "  }",
@@ -996,6 +972,7 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
                 "C.STATIC$BLOCK$0();",
                 "C.STATIC$BLOCK$1();",
                 "class D {",
+                "  /** @nocollapse */ ",
                 "  static STATIC$BLOCK$2() {",
                 "    let z = 1;",
                 "  }",
@@ -1016,6 +993,7 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
         expected(
             lines(
                 "class C {", //
+                "  /** @nocollapse */ ",
                 "  static STATIC$BLOCK$0() {",
                 "    let x = function() {",
                 "      return 1;",
@@ -1046,6 +1024,7 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
         expected(
             lines(
                 "class C {", //
+                "  /** @nocollapse */ ",
                 "  static STATIC$BLOCK$0() {",
                 "    C.x = 2;",
                 "  }",
@@ -1068,9 +1047,11 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
         expected(
             lines(
                 "class Foo {", //
+                "  /** @nocollapse */ ",
                 "  static STATIC$BLOCK$1() {",
                 "    let x = 5;",
                 "    class Bar {",
+                "      /** @nocollapse */ ",
                 "      static STATIC$BLOCK$0() {",
                 "        let x$jscomp$1 = \"str\";",
                 "      }",
@@ -1091,12 +1072,8 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
                 "}")),
         expected(
             lines(
-                "class C {",
-                "  static STATIC$FIELD$0$x() {",
-                "    return 2;",
-                "  }",
-                "}",
-                "C.x = C.STATIC$FIELD$0$x();")));
+                "class C {}", //
+                "C.x = 2;")));
 
     test(
         lines(
@@ -1109,22 +1086,15 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
         srcs(
             lines(
                 "class C {", //
-                "  static x = 2",
-                "  static y = 'hi'",
+                "  static x = 2;",
+                "  static y = 'hi';",
                 "  static z;",
                 "}")),
         expected(
             lines(
-                "class C {", //
-                "  static STATIC$FIELD$0$x() {",
-                "    return 2;",
-                "  }",
-                "  static STATIC$FIELD$1$y() {",
-                "    return 'hi';",
-                "  }",
-                "}",
-                "C.x = C.STATIC$FIELD$0$x();",
-                "C.y = C.STATIC$FIELD$1$y();",
+                "class C {}", //
+                "C.x = 2;",
+                "C.y = 'hi';",
                 "C.z;")));
 
     rewriteFieldOrBlockTest(
@@ -1139,22 +1109,11 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
                 "}")),
         expected(
             lines(
-                "class C {", //
-                "  static STATIC$FIELD$0$x() {",
-                "    return 2;",
-                "  }",
-                "  static STATIC$FIELD$1$y() {",
-                "    return 3;",
-                "  }",
-                "}",
-                "C.x = C.STATIC$FIELD$0$x();",
-                "C.y = C.STATIC$FIELD$1$y()",
-                "class D {",
-                "static STATIC$FIELD$2$z() {",
-                "    return 1;",
-                "  }",
-                "}",
-                "D.z = D.STATIC$FIELD$2$z();")));
+                "class C {}", //
+                "C.x = 2;",
+                "C.y = 3;",
+                "class D {}",
+                "D.z = 1;")));
 
     rewriteFieldOrBlockTest(
         srcs(
@@ -1167,72 +1126,42 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
                 "}")),
         expected(
             lines(
-                "class C {", //
-                "  static STATIC$FIELD$0$w() {",
-                "    return function() {",
-                "      return 1;",
-                "    };",
-                "  }",
-                "  static STATIC$FIELD$1$x() {",
-                "    return () => {",
-                "      return 2;",
-                "    };",
-                "  }",
-                "  static STATIC$FIELD$2$y() {",
-                "    return function a() {",
-                "      return 3;",
-                "    }();",
-                "  }",
-                "  static STATIC$FIELD$3$z() {",
-                "    return (() => {",
-                "      return 4;",
-                "    })();",
-                "  }",
-                "}",
-                "C.w = C.STATIC$FIELD$0$w();",
-                "C.x = C.STATIC$FIELD$1$x();",
-                "C.y = C.STATIC$FIELD$2$y();",
-                "C.z = C.STATIC$FIELD$3$z();")));
+                "class C {}", //
+                "C.w = function () {return 1;};",
+                "C.x = () => {return 2;};",
+                "C.y = (function a() {return 3;})();",
+                "C.z = (() => {return 4;})();")));
 
     rewriteFieldOrBlockTest(
         srcs(
             lines(
                 "class C {", //
-                "  static x = 2",
-                "  static y = C.x",
+                "  static x = 2;",
+                "  static y = C.x;",
                 "}")),
         expected(
             lines(
-                "class C {", //
-                "  static STATIC$FIELD$0$x() {",
-                "    return 2;",
-                "  }",
-                "  static STATIC$FIELD$1$y() {",
-                "    return C.x;",
-                "  }",
-                "}",
-                "C.x = C.STATIC$FIELD$0$x();",
-                "C.y = C.STATIC$FIELD$1$y()")));
+                "class C {}", //
+                "C.x = 2;",
+                "C.y = C.x;")));
 
     rewriteFieldOrBlockTest(
         srcs(
             lines(
                 "class C {", //
-                "  static x = 2",
+                "  static x = 2;",
                 "  static {let y = C.x}",
                 "}")),
         expected(
             lines(
                 "class C {", //
-                "  static STATIC$FIELD$0$x() {",
-                "    return 2;",
-                "  }",
-                "  static STATIC$BLOCK$1() {",
+                "  /** @nocollapse */ ",
+                "  static STATIC$BLOCK$0() {",
                 "    let y = C.x;",
                 "  }",
                 "}",
-                "C.x = C.STATIC$FIELD$0$x();",
-                "C.STATIC$BLOCK$1();")));
+                "C.x = 2;",
+                "C.STATIC$BLOCK$0();")));
   }
 
   @Test
@@ -1566,19 +1495,16 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
         srcs(
             lines(
                 "class C {", //
-                "  static x = 2",
+                "  static x = 2;",
                 "  constructor() {}",
                 "  y = C.x",
                 "}")),
         expected(
             lines(
                 "class C {", //
-                "  static STATIC$FIELD$0$x() {",
-                "    return 2;",
-                "  }",
                 "  constructor() { this.y = C.x; }",
                 "}",
-                "C.x = C.STATIC$FIELD$0$x();")));
+                "C.x = 2;")));
   }
 
   @Test
@@ -1643,11 +1569,8 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
                 "  constructor() {",
                 "    this.y = C.x",
                 "  }",
-                "  static STATIC$FIELD$0$x() {",
-                "    return 2;",
-                "  }",
                 "}",
-                "C.x = C.STATIC$FIELD$0$x();")));
+                "C.x = 2;")));
 
     test(
         lines(
@@ -1722,6 +1645,7 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
         expected(
             lines(
                 "const testcode$classdecl$var0 = class {",
+                "  /** @nocollapse */ ",
                 "  static STATIC$BLOCK$0() {",
                 "    testcode$classdecl$var0.y = 2;",
                 "    let x = testcode$classdecl$var0.y;",
@@ -1744,6 +1668,7 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
             lines(
                 "var JSCompiler_temp_const$jscomp$0 = foo;",
                 "const testcode$classdecl$var0 = class {",
+                "  /** @nocollapse */ ",
                 "  static STATIC$BLOCK$0() {",
                 "    testcode$classdecl$var0.y = 2;",
                 "    let x = testcode$classdecl$var0.y;",
@@ -1769,6 +1694,7 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
                 "var JSCompiler_temp_const$jscomp$1 = foo;",
                 "var JSCompiler_temp_const$jscomp$0 = A.b;",
                 "const testcode$classdecl$var0 = class {",
+                "  /** @nocollapse */ ",
                 "  static STATIC$BLOCK$0() {",
                 "    testcode$classdecl$var0.y = 2;",
                 "    let x = testcode$classdecl$var0.y;",
@@ -1792,6 +1718,7 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
         expected(
             lines(
                 "let c = class {", //
+                "  /** @nocollapse */ ",
                 "  static STATIC$BLOCK$0() {",
                 "    let x = 1;",
                 "  }",
@@ -1811,6 +1738,7 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
             lines(
                 "class A {}", //
                 "A.c = class {",
+                "  /** @nocollapse */ ",
                 "  static STATIC$BLOCK$0() {",
                 "    let x = 1;",
                 "  }",
@@ -1831,6 +1759,7 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
                 "class A {}",
                 "var JSCompiler_temp_const$jscomp$0 = A;",
                 "const testcode$classdecl$var0 = class {",
+                "  /** @nocollapse */ ",
                 "  static STATIC$BLOCK$0() {",
                 "    let x = 1;",
                 "  }",
@@ -1845,50 +1774,38 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
         srcs(
             lines(
                 "let c = class {", //
-                "  static x = 1",
+                "  static x = 1;",
                 "}")),
         expected(
             lines(
-                "let c = class {", //
-                "  static STATIC$FIELD$0$x() {",
-                "    return 1;",
-                "  }",
-                "}",
-                "c.x = c.STATIC$FIELD$0$x()")));
+                "let c = class {}", //
+                "c.x = 1;")));
 
     rewriteFieldOrBlockTest(
         srcs(
             lines(
                 "class A {}",
                 "A.c = class {", //
-                "  static x = 1",
+                "  static x = 1;",
                 "}")),
         expected(
             lines(
                 "class A {}", //
-                "A.c = class {",
-                "static STATIC$FIELD$0$x() {",
-                "    return 1;",
-                "  }",
-                "}",
-                "A.c.x = A.c.STATIC$FIELD$0$x()")));
+                "A.c = class {}",
+                "A.c.x = 1;")));
 
     rewriteFieldOrBlockTest(
         srcs(
             lines(
                 "class A {}",
                 "A[1] = class {", //
-                "  static x = 1",
+                "  static x = 1;",
                 "}")),
         expected(
             lines(
                 "class A {}",
-                "const testcode$classdecl$var0 = class {",
-                "  static STATIC$FIELD$0$x() {",
-                "    return 1;",
-                "  }",
-                "};",
-                "testcode$classdecl$var0.x = testcode$classdecl$var0.STATIC$FIELD$0$x();",
+                "const testcode$classdecl$var0 = class {};",
+                "testcode$classdecl$var0.x = 1;",
                 "A[1] = testcode$classdecl$var0;")));
 
     rewriteFieldOrBlockTest(
@@ -1900,16 +1817,9 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
                 "}")),
         expected(
             lines(
-                "const testcode$classdecl$var0 = class {",
-                "static STATIC$FIELD$0$y() {",
-                "    return 2;",
-                "  }",
-                "  static STATIC$FIELD$1$x() {",
-                "    return testcode$classdecl$var0.y;",
-                "  }",
-                "};",
-                "testcode$classdecl$var0.y = testcode$classdecl$var0.STATIC$FIELD$0$y();",
-                "testcode$classdecl$var0.x = testcode$classdecl$var0.STATIC$FIELD$1$x();",
+                "const testcode$classdecl$var0 = class {};",
+                "testcode$classdecl$var0.y = 2;",
+                "testcode$classdecl$var0.x = testcode$classdecl$var0.y;",
                 "/** @constructor */ ",
                 "let c = testcode$classdecl$var0;")));
 
@@ -1922,16 +1832,9 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
                 "})")),
         expected(
             lines(
-                "const testcode$classdecl$var0 = class {",
-                "static STATIC$FIELD$0$y() {",
-                "    return 2;",
-                "  }",
-                "  static STATIC$FIELD$1$x() {",
-                "    return testcode$classdecl$var0.y;",
-                "  }",
-                "};",
-                "testcode$classdecl$var0.y = testcode$classdecl$var0.STATIC$FIELD$0$y();",
-                "testcode$classdecl$var0.x = testcode$classdecl$var0.STATIC$FIELD$1$x();",
+                "const testcode$classdecl$var0 = class {};",
+                "testcode$classdecl$var0.y = 2;",
+                "testcode$classdecl$var0.x = testcode$classdecl$var0.y;",
                 "foo(testcode$classdecl$var0);")));
 
     rewriteFieldOrBlockTest(
@@ -1947,11 +1850,8 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
                 "  constructor() {",
                 "    this.x = testcode$classdecl$var0.y;",
                 "  }",
-                "  static STATIC$FIELD$0$y() {",
-                "    return 2;",
-                "  }",
                 "};",
-                "testcode$classdecl$var0.y = testcode$classdecl$var0.STATIC$FIELD$0$y();",
+                "testcode$classdecl$var0.y = 2;",
                 "foo(testcode$classdecl$var0);")));
   }
 
@@ -2081,12 +1981,9 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
             lines(
                 "let x = 2;", //
                 "class C {",
-                "  static STATIC$FIELD$0$y() {",
-                "    return x;",
-                "  }",
                 "  constructor(x$jscomp$1) {}",
                 "}",
-                "C.y = C.STATIC$FIELD$0$y()")));
+                "C.y = x;")));
   }
 
   @Test
@@ -2385,12 +2282,8 @@ public final class RewriteClassMembersTest extends CompilerTestCase {
                 "})")),
         expected(
             lines(
-                "const testcode$classdecl$var0 = class {",
-                "static STATIC$FIELD$0$x() {",
-                "    return 1;",
-                "  }",
-                "};",
-                "testcode$classdecl$var0.x = testcode$classdecl$var0.STATIC$FIELD$0$x();",
+                "const testcode$classdecl$var0 = class {};",
+                "testcode$classdecl$var0.x = 1;",
                 "foo(testcode$classdecl$var0);")));
   }
 }

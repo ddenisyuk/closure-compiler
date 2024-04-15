@@ -6515,10 +6515,17 @@ google.maps.MapsServerError = function() {};
  * @extends {google.maps.MVCObject}
  * @constructor
  * @deprecated As of February 21st, 2024, google.maps.Marker is deprecated.
- *     Please use google.maps.marker.AdvancedMarkerElement instead. Please see
- *     <a
+ *     Please use {@link google.maps.marker.AdvancedMarkerElement} instead. At
+ *     this time, google.maps.Marker is not scheduled to be discontinued,
+ *     but {@link google.maps.marker.AdvancedMarkerElement} is recommended over
+ *     google.maps.Marker. While google.maps.Marker will continue to receive bug
+ *     fixes for any major regressions, existing bugs in google.maps.Marker will
+ *     not be addressed. At least 12 months notice will be given before support
+ *     is discontinued. Please see <a
  *     href="https://developers.google.com/maps/deprecations">https://developers.google.com/maps/deprecations</a>
- *     for deprecation details.
+ *     for additional details and <a
+ *     href="https://developers.google.com/maps/documentation/javascript/advanced-markers/migration">https://developers.google.com/maps/documentation/javascript/advanced-markers/migration</a>
+ *     for the migration guide.
  */
 google.maps.Marker = function(opts) {};
 
@@ -6824,7 +6831,9 @@ google.maps.MarkerLibrary.prototype.PinElement;
  *     Please use google.maps.marker.AdvancedMarkerElement instead. Please see
  *     <a
  *     href="https://developers.google.com/maps/deprecations">https://developers.google.com/maps/deprecations</a>
- *     for deprecation details.
+ *     for deprecation details and <a
+ *     href="https://developers.google.com/maps/documentation/javascript/advanced-markers/migration">https://developers.google.com/maps/documentation/javascript/advanced-markers/migration</a>
+ *     for the migration guide.
  */
 google.maps.MarkerOptions = function() {};
 
@@ -7473,6 +7482,11 @@ google.maps.PlacesLibrary.prototype.SearchBox;
  * @type {typeof google.maps.places.SearchByTextRankPreference}
  */
 google.maps.PlacesLibrary.prototype.SearchByTextRankPreference;
+
+/**
+ * @type {typeof google.maps.places.SearchNearbyRankPreference}
+ */
+google.maps.PlacesLibrary.prototype.SearchNearbyRankPreference;
 
 /**
  *
@@ -9295,7 +9309,7 @@ google.maps.Symbol = function() {};
  * anchor&#39;s x and y coordinates respectively. The position is expressed in
  * the same coordinate system as the symbol&#39;s path.
  * @default <code>google.maps.Point(0,0)</code>
- * @type {google.maps.Point|null|undefined}
+ * @type {!google.maps.Point|null|undefined}
  */
 google.maps.Symbol.prototype.anchor;
 
@@ -9320,7 +9334,7 @@ google.maps.Symbol.prototype.fillOpacity;
  * supplied by the marker. The origin is expressed in the same coordinate system
  * as the symbol&#39;s path. This property is unused for symbols on polylines.
  * @default <code>google.maps.Point(0,0)</code>
- * @type {google.maps.Point|null|undefined}
+ * @type {!google.maps.Point|null|undefined}
  */
 google.maps.Symbol.prototype.labelOrigin;
 
@@ -16260,6 +16274,13 @@ google.maps.places.Place.prototype.openingHours;
 google.maps.places.Place.searchByText = function(request) {};
 
 /**
+ * Search for nearby places.
+ * @param {!google.maps.places.SearchNearbyRequest} request
+ * @return {!Promise<{places:!Array<!google.maps.places.Place>}>}
+ */
+google.maps.places.Place.searchNearby = function(request) {};
+
+/**
  * @param {!google.maps.places.FetchFieldsRequest} options
  * @return {!Promise<{place:!google.maps.places.Place}>}
  */
@@ -16315,17 +16336,12 @@ google.maps.places.PlaceAspectRating.prototype.type;
 /**
  * Available only in the v=beta channel: https://goo.gle/3oAthT3.
  *
- * <ul>
-<li>PlaceAutocompleteElement is an <code>HTMLElement</code> subclass which
-provides a UI component for the Places Autocomplete API. After loading the
-<code>places</code> library, an input with autocomplete functionality can be
-created in HTML. For example: <pre><code>&lt;gmp-placeautocomplete
-&gt;&lt;/gmp-placeautocomplete&gt;</code></pre></li>
-</ul>
+ * PlaceAutocompleteElement is an <code>HTMLElement</code> subclass which
+ * provides a UI component for the Places Autocomplete API.
  *
  * Access by calling `const {PlaceAutocompleteElement} = await
-google.maps.importLibrary("places")`. See
-https://developers.google.com/maps/documentation/javascript/libraries.
+ * google.maps.importLibrary("places")`. See
+ * https://developers.google.com/maps/documentation/javascript/libraries.
  * @param {!google.maps.places.PlaceAutocompleteElementOptions} options
  * @implements {google.maps.places.PlaceAutocompleteElementOptions}
  * @extends {HTMLElement}
@@ -17760,6 +17776,120 @@ google.maps.places.SearchByTextRequest.prototype.query;
  * @deprecated Please use rankPreference instead.
  */
 google.maps.places.SearchByTextRequest.prototype.rankBy;
+
+/**
+ * RankPreference enum for SearchNearbyRequest.
+ *
+ * Access by calling `const {SearchNearbyRankPreference} = await
+ * google.maps.importLibrary("places")`. See
+ * https://developers.google.com/maps/documentation/javascript/libraries.
+ * @enum {string}
+ */
+google.maps.places.SearchNearbyRankPreference = {
+  /**
+   * Ranks results by distance.
+   */
+  DISTANCE: 'DISTANCE',
+  /**
+   * Ranks results by popularity.
+   */
+  POPULARITY: 'POPULARITY',
+};
+
+/**
+ * Request interface for {@link google.maps.places.Place.searchNearby}. For more
+ * information on the request, see <a
+ * href="https://developers.google.com/maps/documentation/places/web-service/reference/rest/v1/places/searchNearby">Places
+ * API reference</a>.
+ * @record
+ */
+google.maps.places.SearchNearbyRequest = function() {};
+
+/**
+ * Excluded primary place type. See the <a
+ * href="https://developers.google.com/maps/documentation/places/web-service/place-types">full
+ * list of types supported</a>. A place can only have a single primary type. Up
+ * to 50 types may be specified. If you specify the same type in both
+ * <code>included</code> and <code>excluded</code> lists, an INVALID_ARGUMENT
+ * error is returned.
+ * @type {!Array<string>|undefined}
+ */
+google.maps.places.SearchNearbyRequest.prototype.excludedPrimaryTypes;
+
+/**
+ * Fields to be included in the response, <a
+ * href="https://developers.google.com/maps/billing/understanding-cost-of-use#places-product">which
+ * will be billed for</a>. If <code>[&#39;*&#39;]</code> is passed in, all
+ * available fields will be returned and billed for (this is not recommended for
+ * production deployments). For a list of fields see {@link
+ * google.maps.places.PlaceResult}. Nested fields can be specified with
+ * dot-paths (for example, <code>"geometry.location"</code>).
+ * @type {!Array<string>}
+ */
+google.maps.places.SearchNearbyRequest.prototype.fields;
+
+/**
+ * Included primary place type. See the <a
+ * href="https://developers.google.com/maps/documentation/places/web-service/place-types">full
+ * list of types supported</a>. A place can only have a single primary type. Up
+ * to 50 types may be specified. If you specify the same type in both
+ * <code>included</code> and <code>excluded</code> lists, an INVALID_ARGUMENT
+ * error is returned.
+ * @type {!Array<string>|undefined}
+ */
+google.maps.places.SearchNearbyRequest.prototype.includedPrimaryTypes;
+
+/**
+ * Included place type. See the <a
+ * href="https://developers.google.com/maps/documentation/places/web-service/place-types">full
+ * list of types supported</a>. A place can have many different place types. Up
+ * to 50 types may be specified. If you specify the same type in both
+ * <code>included</code> and <code>excluded</code> lists, an INVALID_ARGUMENT
+ * error is returned.
+ * @type {!Array<string>|undefined}
+ */
+google.maps.places.SearchNearbyRequest.prototype.includedTypes;
+
+/**
+ * Place details will be displayed with the preferred language if available.
+ * Will default to the browser&#39;s language preference. Current list of
+ * supported languages: <a
+ * href="https://developers.google.com/maps/faq#languagesupport">https://developers.google.com/maps/faq#languagesupport</a>.
+ * @type {string|undefined}
+ */
+google.maps.places.SearchNearbyRequest.prototype.language;
+
+/**
+ * The region to search, specified as a circle with center and radius. Results
+ * outside given location are not returned.
+ * @type {!google.maps.Circle|!google.maps.CircleLiteral}
+ */
+google.maps.places.SearchNearbyRequest.prototype.locationRestriction;
+
+/**
+ * Maximum number of results to return. It must be between 1 and 20,
+ * inclusively.
+ * @type {number|undefined}
+ */
+google.maps.places.SearchNearbyRequest.prototype.maxResultCount;
+
+/**
+ * How results will be ranked in the response.
+ * @default <code>SearchNearbyRankPreference.DISTANCE</code>
+ * @type {!google.maps.places.SearchNearbyRankPreference|undefined}
+ */
+google.maps.places.SearchNearbyRequest.prototype.rankPreference;
+
+/**
+ * The Unicode country/region code (CLDR) of the location where the request is
+ * coming from. This parameter is used to display the place details, like
+ * region-specific place name, if available. The parameter can affect results
+ * based on applicable law. For more information, see <a
+ * href="https://www.unicode.org/cldr/charts/latest/supplemental/territory_language_information.html">https://www.unicode.org/cldr/charts/latest/supplemental/territory_language_information.html</a>.
+ * Note that 3-digit region codes are not currently supported.
+ * @type {string|undefined}
+ */
+google.maps.places.SearchNearbyRequest.prototype.region;
 
 /**
  * Contains structured information about the place&#39;s description, divided

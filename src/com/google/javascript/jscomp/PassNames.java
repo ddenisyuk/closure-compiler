@@ -28,10 +28,11 @@ public final class PassNames {
   public static final String ANALYZER_CHECKS = "analyzerChecks";
   public static final String ANGULAR_PASS = "angularPass";
   public static final String BEFORE_EARLY_OPTIMIZATION_LOOP = "beforeEarlyOptimizationLoop";
+  public static final String BEFORE_EARLY_OPTIMIZATIONS_TRANSPILATION =
+      "beforeEarlyOptimizationsTranspilation";
   public static final String BEFORE_STANDARD_OPTIMIZATIONS = "beforeStandardOptimizations";
   public static final String BEFORE_MAIN_OPTIMIZATIONS = "beforeMainOptimizations";
   public static final String BEFORE_TYPE_CHECKING = "beforeTypeChecking";
-  public static final String BEFORE_PRE_TYPECHECK_TRANSPILATION = "beforePreTypeCheckTranspilation";
   public static final String BEFORE_SERIALIZATION = "beforeSerialization";
   public static final String CHECK_CONFORMANCE = "checkConformance";
   public static final String CHECK_CONST_PARAMS = "checkConstParams";
@@ -91,7 +92,6 @@ public final class PassNames {
   public static final String RENAME_PROPERTIES = "renameProperties";
   public static final String STRIP_SIDE_EFFECT_PROTECTION = "stripSideEffectProtection";
   public static final String WIZ_PASS = "wizPass";
-  public static final String PARENTHESIZE_FUNCTIONS_IN_CHUNKS = "parenthesizeFunctionsInChunks";
 
   private PassNames() {}
 }

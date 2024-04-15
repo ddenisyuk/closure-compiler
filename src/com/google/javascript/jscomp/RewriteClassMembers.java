@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.javascript.jscomp.parsing.parser.FeatureSet;
 import com.google.javascript.jscomp.parsing.parser.FeatureSet.Feature;
 import com.google.javascript.rhino.IR;
+import com.google.javascript.rhino.JSDocInfo;
 import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.jstype.JSType;
 import java.util.ArrayDeque;
@@ -96,9 +97,11 @@ public final class RewriteClassMembers implements NodeTraversal.ScopedCallback, 
         classStack.peek().recordStaticBlock(n);
         break;
       case COMPUTED_PROP:
-        checkState(!classStack.isEmpty());
-        if (NodeUtil.canBeSideEffected(n.getFirstChild())) {
-          classStack.peek().computedPropMembers.add(n);
+        if (n.getParent().isClassMembers()) {
+          checkState(!classStack.isEmpty());
+          if (NodeUtil.canBeSideEffected(n.getFirstChild())) {
+            classStack.peek().computedPropMembers.add(n);
+          }
         }
         break;
       default:
@@ -283,6 +286,12 @@ public final class RewriteClassMembers implements NodeTraversal.ScopedCallback, 
                 convStaticMethodToCall(nameToUse, staticMember.detach(), /* callNode= */ null);
             break;
           }
+          // if staticMember doesn't reference this or super, then don't extract it into a static
+          // method
+          if (!NodeUtil.referencesEnclosingReceiver(staticMember)) {
+            transpiledNode = convNonCompFieldToGetProp(nameToUse, staticMember.detach());
+            break;
+          }
           blockNode = createBlockNodeWithReturn(staticMember.removeFirstChild());
           callNode =
               convBlockToStaticMethod(
@@ -297,6 +306,14 @@ public final class RewriteClassMembers implements NodeTraversal.ScopedCallback, 
           break;
         case COMPUTED_FIELD_DEF:
           if (staticMember.hasChildren() && staticMember.getChildCount() > 1) {
+
+            // if staticMember doesn't reference this or super, then don't extract it into a static
+            // method
+            if (!NodeUtil.referencesEnclosingReceiver(staticMember)) {
+              transpiledNode = convCompFieldToGetElem(nameToUse, staticMember.detach());
+              break;
+            }
+
             blockNode = createBlockNodeWithReturn(staticMember.getLastChild().detach());
             callNode =
                 convBlockToStaticMethod(
@@ -339,6 +356,12 @@ public final class RewriteClassMembers implements NodeTraversal.ScopedCallback, 
         (fieldValue != null)
             ? astFactory.createAssignStatement(getProp, fieldValue.detach())
             : astFactory.exprResult(getProp);
+    // Move any JSDoc from the field declaration to the child of the EXPR_RESULT,
+    // which represents the new declaration.
+    // noncomputedField is already detached, so there's no benefit to calling
+    // NodeUtil.getBestJSDocInfo(noncomputedField). For now at least,
+    // the JSDocInfo we want will always be directly on noncomputedField in all cases.
+    result.getFirstChild().setJSDocInfo(noncomputedField.getJSDocInfo());
     result.srcrefTreeIfMissing(noncomputedField);
     return result;
   }
@@ -392,6 +415,13 @@ public final class RewriteClassMembers implements NodeTraversal.ScopedCallback, 
             .createMemberFunctionDef(uniqueStaticMethodName, functionNode)
             .srcrefTreeIfMissing(staticMember);
     methodNode.setStaticMember(true);
+
+    // add `@nocollapse` to static methods
+    JSDocInfo.Builder builder = JSDocInfo.builder();
+    builder.recordNoCollapse();
+    JSDocInfo jsDoc = builder.build();
+    methodNode.setJSDocInfo(jsDoc);
+
     methodNode.insertBefore(insertionPoint);
     compiler.reportChangeToEnclosingScope(methodNode);
 

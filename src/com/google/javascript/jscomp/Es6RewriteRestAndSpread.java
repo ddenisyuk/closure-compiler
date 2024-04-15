@@ -93,10 +93,12 @@ public final class Es6RewriteRestAndSpread extends NodeTraversal.AbstractPostOrd
       return;
     }
 
+    // Now that the restParam is deleted, create a let declaration by making a new NAME node of the
+    // same name `paramName`
     Node let =
         astFactory
             .createSingleLetNameDeclaration(
-                paramName,
+                paramName, // creates a new NAME node with name `paramName`
                 astFactory.createCall(
                     astFactory.createGetPropWithUnknownType(
                         astFactory.createQName(this.namespace, "$jscomp.getRestArguments"),
@@ -105,7 +107,14 @@ public final class Es6RewriteRestAndSpread extends NodeTraversal.AbstractPostOrd
                     astFactory.createNumber(restIndex),
                     astFactory.createArgumentsReference()))
             .srcrefTreeIfMissing(functionBody);
-    functionBody.addChildToFront(let);
+    Node insertBeforePoint =
+        NodeUtil.getInsertionPointAfterAllInnerFunctionDeclarations(functionBody);
+    if (insertBeforePoint != null) {
+      let.insertBefore(insertBeforePoint);
+    } else {
+      // functionBody only contains hoisted function declarations
+      functionBody.addChildToBack(let);
+    }
     NodeUtil.addFeatureToScript(t.getCurrentScript(), Feature.LET_DECLARATIONS, compiler);
     compiler.ensureLibraryInjected("es6/util/restarguments", /* force= */ false);
     t.reportCodeChange();

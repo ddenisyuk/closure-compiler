@@ -234,8 +234,8 @@ public final class DefaultPassConfig extends PassConfig {
       checks.maybeAdd(checkSideEffects);
       checks.maybeAdd(angularPass);
       checks.maybeAdd(closureGoogScopeAliases);
-      addModuleRewritingPasses(checks, options);
       checks.maybeAdd(closurePrimitives);
+      addModuleRewritingPasses(checks, options);
       checks.maybeAdd(clearTypedScopeCreatorPass);
       checks.maybeAdd(clearTopTypedScopePass);
       checks.maybeAdd(generateExports);
@@ -344,13 +344,13 @@ public final class DefaultPassConfig extends PassConfig {
       checks.maybeAdd(closureGoogScopeAliases);
     }
 
+    if (options.closurePass) {
+      checks.maybeAdd(closurePrimitives);
+    }
+
     // TODO(b/141389184): Move this after the Polymer pass
     if (options.shouldRewriteModulesBeforeTypechecking()) {
       addModuleRewritingPasses(checks, options);
-    }
-
-    if (options.closurePass) {
-      checks.maybeAdd(closurePrimitives);
     }
 
     // It's important that the PolymerPass run *after* the ClosurePrimitives and ChromePass rewrites
@@ -377,9 +377,6 @@ public final class DefaultPassConfig extends PassConfig {
     if (options.computeFunctionSideEffects) {
       checks.maybeAdd(checkRegExp);
     }
-
-    // Passes running before this point should expect to see language features up to ES_2017.
-    checks.maybeAdd(createEmptyPass(PassNames.BEFORE_PRE_TYPECHECK_TRANSPILATION));
 
     checks.maybeAdd(createEmptyPass(PassNames.BEFORE_TYPE_CHECKING));
 
@@ -468,14 +465,11 @@ public final class DefaultPassConfig extends PassConfig {
 
     checks.maybeAdd(createEmptyPass(PassNames.AFTER_STANDARD_CHECKS));
 
-    if (options.checksOnly) {
-      checks.maybeAdd(removeSyntheticScript);
-    } else if (!options.checksOnly) {
-      checks.maybeAdd(mergeSyntheticScript);
-      // At this point all checks have been done.
-      if (options.exportTestFunctions) {
-        checks.maybeAdd(exportTestFunctions);
-      }
+    checks.maybeAdd(mergeSyntheticScript);
+
+    // At this point all checks have been done.
+    if (!options.checksOnly && options.exportTestFunctions) {
+      checks.maybeAdd(exportTestFunctions);
     }
 
     // Create extern exports after the normalize because externExports depends on unique names.
@@ -491,14 +485,15 @@ public final class DefaultPassConfig extends PassConfig {
     // See b/180424427 for why this runs in stage 1 and not stage 2.
     checks.maybeAdd(gatherExternPropertiesCheck);
 
-    checks.assertAllOneTimePasses();
-    assertValidOrderForChecks(checks);
-
     checks.maybeAdd(createEmptyPass(PassNames.BEFORE_SERIALIZATION));
 
     if (options.getTypedAstOutputFile() != null) {
       checks.maybeAdd(serializeTypedAst);
     }
+
+    // Validation should be after all pass additions
+    checks.assertAllOneTimePasses();
+    assertValidOrderForChecks(checks);
 
     return checks;
   }
@@ -507,6 +502,7 @@ public final class DefaultPassConfig extends PassConfig {
   protected PassListBuilder getOptimizations() {
     PassListBuilder passes = new PassListBuilder(options);
     if (options.isPropertyRenamingOnlyCompilationMode()) {
+      passes.maybeAdd(removeUnnecessarySyntheticExterns);
       TranspilationPasses.addTranspilationRuntimeLibraries(passes);
       passes.maybeAdd(closureProvidesRequires);
       passes.maybeAdd(processDefinesOptimize);
@@ -590,7 +586,7 @@ public final class DefaultPassConfig extends PassConfig {
 
     // Defines in code always need to be processed.
     passes.maybeAdd(processDefinesOptimize);
-
+    passes.maybeAdd(createEmptyPass(PassNames.BEFORE_EARLY_OPTIMIZATIONS_TRANSPILATION));
     TranspilationPasses.addEarlyOptimizationTranspilationPasses(passes, options);
 
     passes.maybeAdd(normalize);
@@ -955,10 +951,6 @@ public final class DefaultPassConfig extends PassConfig {
     // Raise to ES2015, if allowed
     if (options.getOutputFeatureSet().contains(ES2015)) {
       passes.maybeAdd(optimizeToEs6);
-    }
-
-    if (!options.parenthesizeFunctionsInChunks.isEmpty()) {
-      passes.maybeAdd(parenthesizeFunctionsInChunks);
     }
 
     // Must run after all non-safety-check passes as the optimizations do not support modules.
@@ -2189,16 +2181,6 @@ public final class DefaultPassConfig extends PassConfig {
           .setInternalFactory(
               (compiler) ->
                   new DisambiguateProperties(compiler, options.getPropertiesThatMustDisambiguate()))
-          .build();
-
-  /** Marks all functions for wrapping with () in the specified chunks. */
-  private final PassFactory parenthesizeFunctionsInChunks =
-      PassFactory.builder()
-          .setName(PassNames.PARENTHESIZE_FUNCTIONS_IN_CHUNKS)
-          .setInternalFactory(
-              (compiler) ->
-                  new ParenthesizeFunctionsInChunks(
-                      compiler, new LinkedHashSet<>(options.parenthesizeFunctionsInChunks)))
           .build();
 
   /** Rewrite instance methods as static methods, to make them easier to inline. */

@@ -200,19 +200,6 @@ public class TranspilationPasses {
       passes.maybeAdd(
           getEs6RewriteDestructuring(ObjectDestructuringRewriteMode.REWRITE_ALL_OBJECT_PATTERNS));
     }
-    if (options.needsTranspilationOf(Feature.NEW_TARGET)) {
-      passes.maybeAdd(rewriteNewDotTarget);
-    }
-    if (options.needsTranspilationOf(Feature.ARROW_FUNCTIONS)) {
-      passes.maybeAdd(es6RewriteArrowFunction);
-    }
-    if (options.needsTranspilationOf(Feature.CLASSES)) {
-      passes.maybeAdd(es6RewriteClass);
-    }
-    if (options.needsTranspilationFrom(
-        FeatureSet.BARE_MINIMUM.with(Feature.REST_PARAMETERS, Feature.SPREAD_EXPRESSIONS))) {
-      passes.maybeAdd(es6RewriteRestAndSpread);
-    }
   }
 
   /**
@@ -225,6 +212,23 @@ public class TranspilationPasses {
       PassListBuilder passes, CompilerOptions options) {
     // TODO(b/197349249): Move passes from `addEarlyOptimizationTranspilationPasses()` to here
     // until that method can be deleted as a no-op.
+
+    if (options.needsTranspilationOf(Feature.NEW_TARGET)) {
+      passes.maybeAdd(rewriteNewDotTarget);
+    }
+
+    if (options.needsTranspilationOf(Feature.ARROW_FUNCTIONS)) {
+      passes.maybeAdd(es6RewriteArrowFunction);
+    }
+
+    if (options.needsTranspilationOf(Feature.CLASSES)) {
+      passes.maybeAdd(es6RewriteClass);
+    }
+
+    if (options.needsTranspilationFrom(
+        FeatureSet.BARE_MINIMUM.with(Feature.REST_PARAMETERS, Feature.SPREAD_EXPRESSIONS))) {
+      passes.maybeAdd(es6RewriteRestAndSpread);
+    }
 
     if (options.needsTranspilationFrom(
         FeatureSet.BARE_MINIMUM.with(
