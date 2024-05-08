@@ -33,6 +33,7 @@ enum Annotation {
   DEPRECATED,
   DESC,
   DICT,
+  REQUIRE_INLINING,
   ENHANCE,
   ENUM,
   EXTENDS,
@@ -93,6 +94,7 @@ enum Annotation {
   STRUCT,
   SUPPRESS,
   TEMPLATE,
+  CLOSURE_UNAWARE_CODE,
   THIS,
   THROWS,
   TYPE,
@@ -112,6 +114,7 @@ enum Annotation {
           .put("argument", Annotation.PARAM)
           .put("author", Annotation.AUTHOR)
           .put("closurePrimitive", Annotation.CLOSURE_PRIMITIVE)
+          .put("closureUnaware", Annotation.CLOSURE_UNAWARE_CODE)
           .put("const", Annotation.CONSTANT)
           .put("collapsibleOrBreakMyCode", Annotation.COLLAPSIBLE_OR_BREAK_MY_CODE)
           .put("constant", Annotation.CONSTANT)
@@ -122,6 +125,7 @@ enum Annotation {
           .put("deprecated", Annotation.DEPRECATED)
           .put("desc", Annotation.DESC)
           .put("dict", Annotation.DICT)
+          .put("requireInlining", Annotation.REQUIRE_INLINING)
           .put("enum", Annotation.ENUM)
           .put("enhance", Annotation.ENHANCE)
           .put("export", Annotation.EXPORT)

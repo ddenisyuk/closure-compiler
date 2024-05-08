@@ -48,10 +48,8 @@ import com.google.javascript.rhino.Node;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -95,7 +93,7 @@ public class AmbiguateProperties implements CompilerPass {
   private final ImmutableSet<String> externedNames;
 
   /** Names to which properties shouldn't be renamed, to avoid name conflicts */
-  private final Set<String> quotedNames = new HashSet<>();
+  private final Set<String> quotedNames = new LinkedHashSet<>();
 
   private final ColorRegistry colorRegistry;
 
@@ -139,7 +137,7 @@ public class AmbiguateProperties implements CompilerPass {
     AmbiguateProperties ap =
         new AmbiguateProperties(
             compiler, reservedFirstCharacters, reservedNonFirstCharacters, externProperties);
-    ap.renamingMap = new HashMap<>();
+    ap.renamingMap = new LinkedHashMap<>();
     return ap;
   }
 
@@ -605,7 +603,7 @@ public class AmbiguateProperties implements CompilerPass {
     int numOccurrences;
     boolean skipAmbiguating;
     // All colors upon which this property was directly accessed. For "a.b" this includes "a"'s type
-    @Nullable IdentityHashMap<ColorGraphNode, Integer> relatedColorsSeeds = null;
+    @Nullable LinkedHashMap<ColorGraphNode, Integer> relatedColorsSeeds = null;
     // includes relatedTypesSeeds + all subtypes of those seed colors. For example if this property
     // was accessed off of Iterable, then this bitset will include Array as well.
     final BitSet relatedColors = new BitSet();
@@ -628,7 +626,7 @@ public class AmbiguateProperties implements CompilerPass {
       }
 
       if (relatedColorsSeeds == null) {
-        this.relatedColorsSeeds = new IdentityHashMap<>();
+        this.relatedColorsSeeds = new LinkedHashMap<>();
       }
 
       ColorGraphNode newColorGraphNode = graphNodeFactory.createNode(color);

@@ -100,14 +100,15 @@ public class JSDocInfo implements Serializable {
     @SuppressWarnings("unchecked")
     @Nullable
         // cast to T is unsafe but guaranteed by builder
-        T get(JSDocInfo info) {
+        T
+        get(JSDocInfo info) {
       if ((info.propertyKeysBitset & mask) == 0) {
         return null;
       }
       return (T) info.getPropertyValueByIndex(Long.bitCount(info.propertyKeysBitset & (mask - 1)));
     }
 
-    T clone(T arg, @Nullable TypeTransform transform) {
+    T clone(T arg, @Nullable TypeTransform unusedTransform) {
       return arg;
     }
 
@@ -122,7 +123,7 @@ public class JSDocInfo implements Serializable {
       return left.equals(right);
     }
 
-    Iterable<JSTypeExpression> getTypeExpressions(T value) {
+    Iterable<JSTypeExpression> getTypeExpressions(T unusedValue) {
       return ImmutableList.of();
     }
 
@@ -333,6 +334,7 @@ public class JSDocInfo implements Serializable {
     PURE_OR_BREAK_MY_CODE,
     COLLAPSIBLE_OR_BREAK_MY_CODE,
     NOCOVERAGE,
+    REQUIRE_INLINING,
 
     NG_INJECT,
     WIZ_ACTION,
@@ -342,6 +344,7 @@ public class JSDocInfo implements Serializable {
     MIXIN_CLASS,
     MIXIN_FUNCTION,
     SASS_GENERATED_CSS_TS,
+    CLOSURE_UNAWARE_CODE,
 
     // `@provideGoog` only appears in base.js
     PROVIDE_GOOG,
@@ -865,6 +868,13 @@ public class JSDocInfo implements Serializable {
   }
 
   /**
+   * Returns whether the {@code @requireInlining} annotation is present on this {@link JSDocInfo}.
+   */
+  public boolean isRequireInlining() {
+    return checkBit(Bit.REQUIRE_INLINING);
+  }
+
+  /**
    * Returns whether the {@code @collapsibleOrBreakMyCode} annotation is present on this {@link
    * JSDocInfo}.
    */
@@ -1229,6 +1239,11 @@ public class JSDocInfo implements Serializable {
 
   public boolean isSassGeneratedCssTs() {
     return checkBit(Bit.SASS_GENERATED_CSS_TS);
+  }
+
+  /** Returns whether JSDoc is annotated with the {@code @thirdPartyCode} annotation. */
+  public boolean isClosureUnawareCode() {
+    return checkBit(Bit.CLOSURE_UNAWARE_CODE);
   }
 
   /** Gets the description specified by the {@code @license} annotation. */
@@ -1652,7 +1667,8 @@ public class JSDocInfo implements Serializable {
                           | Bit.NOCOMPILE.mask
                           | Bit.NOCOVERAGE.mask
                           | Bit.TYPE_SUMMARY.mask
-                          | Bit.ENHANCED_NAMESPACE.mask))
+                          | Bit.ENHANCED_NAMESPACE.mask
+                          | Bit.CLOSURE_UNAWARE_CODE.mask))
                   != 0
               || isModsRecorded());
     }
@@ -1660,6 +1676,18 @@ public class JSDocInfo implements Serializable {
     /** Returns whether this builder recorded a description. */
     public boolean isDescriptionRecorded() {
       return props.get(DESCRIPTION) != null;
+    }
+
+    /** Returns whether the {@code @noinline} annotation is present on this {@link JSDocInfo}. */
+    public boolean isNoInline() {
+      return checkBit(Bit.NOINLINE);
+    }
+
+    /**
+     * Returns whether the {@code @requireInlining} annotation is present on this {@link JSDocInfo}.
+     */
+    public boolean isRequireInlining() {
+      return checkBit(Bit.REQUIRE_INLINING);
     }
 
     /**
@@ -2326,6 +2354,18 @@ public class JSDocInfo implements Serializable {
 
     /**
      * Records that the {@link JSDocInfo} being built should have its {@link
+     * JSDocInfo#isRequireInlining()} flag set to {@code true}.
+     *
+     * @return {@code true} if the requireInlining flag was recorded and {@code false} if it was
+     *     already recorded
+     */
+    @CanIgnoreReturnValue
+    public boolean recordRequireInlining() {
+      return populateBit(Bit.REQUIRE_INLINING, true);
+    }
+
+    /**
+     * Records that the {@link JSDocInfo} being built should have its {@link
      * JSDocInfo#isPureOrBreakMyCode()} flag set to {@code true}.
      *
      * @return {@code true} if the no pureOrBreakMyCode flag was recorded and {@code false} if it
@@ -2678,6 +2718,16 @@ public class JSDocInfo implements Serializable {
     /** Records that the types of values passed to this method should be logged in the compiler. */
     public boolean recordLogTypeInCompiler() {
       return populateBit(Bit.LOG_TYPE_IN_COMPILER, true);
+    }
+
+    /** Returns whether JSDoc is annotated with the {@code @closureUnaware} annotation. */
+    public boolean isClosureUnawareCode() {
+      return checkBit(Bit.CLOSURE_UNAWARE_CODE);
+    }
+
+    /** Records that this JSDoc was annotated with the {@code @closureUnaware} annotation. */
+    public boolean recordClosureUnawareCode() {
+      return populateBit(Bit.CLOSURE_UNAWARE_CODE, true);
     }
 
     // TODO(sdh): this is a new method - consider removing it in favor of recordType?

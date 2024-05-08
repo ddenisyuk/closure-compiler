@@ -147,6 +147,10 @@ public final class JSDocInfoPrinter {
       parts.add("@noinline");
     }
 
+    if (info.isRequireInlining()) {
+      parts.add("@requireInlining");
+    }
+
     if (info.isProvideAlreadyProvided()) {
       parts.add("@provideAlreadyProvided");
     }
@@ -193,6 +197,10 @@ public final class JSDocInfoPrinter {
 
     if (info.isInterface() && info.usesImplicitMatch()) {
       parts.add("@record");
+    }
+
+    if (info.isClosureUnawareCode()) {
+      parts.add("@closureUnaware");
     }
 
     if (info.hasBaseType()) {

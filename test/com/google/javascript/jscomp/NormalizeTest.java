@@ -103,6 +103,7 @@ public final class NormalizeTest extends CompilerTestCase {
   }
 
   @Test
+  @SuppressWarnings("RhinoNodeGetFirstFirstChild") // to allow adding separate comments per-child
   public void testConstAnnotationPropagation() {
     test(
         "const x = 3; var a,     b; var y = x + 2;", //
@@ -131,6 +132,7 @@ public final class NormalizeTest extends CompilerTestCase {
   }
 
   @Test
+  @SuppressWarnings("RhinoNodeGetFirstFirstChild") // to allow adding separate comments per-child
   public void testRestConstAnnotationPropagation() {
     testSame(
         lines(
@@ -166,6 +168,7 @@ public final class NormalizeTest extends CompilerTestCase {
   }
 
   @Test
+  @SuppressWarnings("RhinoNodeGetFirstFirstChild") // to allow adding separate comments per-child
   public void testRestConstAnnotationPropagation_onlyConstVars() {
     testSame(
         lines(
@@ -1383,6 +1386,20 @@ public final class NormalizeTest extends CompilerTestCase {
   @Test
   public void testFunctionBlock2() {
     test("var args = 1; var foo = () => args;", "var args = 1; var foo = () => { return args; }");
+  }
+
+  @Test
+  public void testBlocklessArrowFunction_withinArgs_getBlocks() {
+    // disable type checking to prevent `property map never defined` errors.
+    disableTypeCheck();
+    disableTypeInfoValidation();
+    test(
+        lines(
+            "function sortAndConcatParams(params) {", // arrow fn body missing block
+            "  return [...params].map(((k) => `k`));}"),
+        lines(
+            "function sortAndConcatParams(params) {", // gets block {}
+            "  return [...params].map(((k) => { return `k`; }));}"));
   }
 
   @Test
