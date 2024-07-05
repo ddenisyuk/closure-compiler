@@ -38,7 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
-import org.jspecify.nullness.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Performs some Closure-specific simplifications including rewriting goog.base, goog.addDependency.
@@ -671,18 +671,6 @@ class ProcessClosurePrimitives extends AbstractPostOrderCallback implements Comp
 
   /** Process a goog.addDependency() call and record any forward declarations. */
   private void processAddDependency(Node n) {
-    CodingConvention convention = compiler.getCodingConvention();
-    List<String> typeDecls =
-        convention.identifyTypeDeclarationCall(n);
-
-    // TODO(nnaze): Use of addDependency() should someday cause a warning
-    // as we migrate users to explicit goog.forwardDeclare() calls.
-    if (typeDecls != null) {
-      for (String typeDecl : typeDecls) {
-        compiler.forwardDeclareType(typeDecl);
-      }
-    }
-
     // We can't modify parent, so just create a node that will
     // get compiled out.
     Node emptyNode = IR.number(0);

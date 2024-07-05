@@ -210,6 +210,8 @@ public final class Es6RewriteDestructuring implements NodeTraversal.Callback, Co
   private void ensureArrowFunctionsHaveBlockBodies(NodeTraversal t, Node function) {
     Node body = function.getLastChild();
     if (!body.isBlock()) {
+      // TODO(b/197349249): When all instances of this pass run post normalization, then we can be
+      // sure that any function here has a block and this can be replaced with an assertion.
       body.detach();
       Node replacement = IR.block(IR.returnNode(body)).srcrefTreeIfMissing(body);
       function.addChildToBack(replacement);
@@ -264,11 +266,22 @@ public final class Es6RewriteDestructuring implements NodeTraversal.Callback, Co
                   : IR.var(lhs, rhs);
           newStatement.srcrefTreeIfMissing(param);
           if (insertSpot == null) {
-            body.addChildToFront(newStatement);
+            // insert new declarations only after all inner function declarations in that function
+            // body to preserve normalization
+            insertSpot = NodeUtil.getInsertionPointAfterAllInnerFunctionDeclarations(body);
+            if (insertSpot != null) {
+              newStatement.insertBefore(insertSpot);
+            } else {
+              // functionBody only contains hoisted function declarations
+              body.addChildToBack(newStatement);
+            }
           } else {
             newStatement.insertAfter(insertSpot);
           }
           insertSpot = newStatement;
+          if (newStatement.getFirstChild().isDestructuringLhs()) {
+            insertSpot = rewriteVarDestructuringDeclaration(newStatement.getFirstChild());
+          }
         }
 
         param.replaceWith(newParam);
@@ -289,15 +302,20 @@ public final class Es6RewriteDestructuring implements NodeTraversal.Callback, Co
   }
 
   /**
-   * Replace a destructuring pattern parameter with a a temporary parameter name and add a new local
-   * variable declaration to the function assigning the temporary parameter to the pattern.
+   * Replace a destructuring pattern parameter with a a temporary parameter name. To do this, this
+   * function adds a new local assignment in the function body assigning the temporary parameter to
+   * the pattern and creates stub declarations for the individual names in the destructuring
+   * pattern.
    *
-   * <p>Note: Rewrites of variable declaration destructuring will happen later to rewrite this
-   * declaration as non-destructured code.
+   * <p>For example, given the function `function f([a, b]) {}`, this function will convert it to
+   * `function f(tempVar) { var a; var b; [a, b] = tempVar; }`
+   *
+   * <p>Note: Rewrites of the destructuring pattern will happen later to rewrite this destructuring
+   * pattern as non-destructured code.
    *
    * @param insertSpot The local variable declaration will be inserted after this statement.
    * @param tempVarName the name to use for the temporary variable
-   * @return the declaration statement that was generated for the local variable
+   * @return the last stub declaration that was generated for the local variable
    */
   private Node replacePatternParamWithTempVar(
       Node function, Node insertSpot, Node patternParam, String tempVarName) {
@@ -308,12 +326,77 @@ public final class Es6RewriteDestructuring implements NodeTraversal.Callback, Co
     patternParam.replaceWith(newParam);
     Node newDecl = IR.var(patternParam, createTempVarNameNode(tempVarName, paramType));
     newDecl.srcrefTreeIfMissing(patternParam);
+    
     if (insertSpot == null) {
-      function.getLastChild().addChildToFront(newDecl);
+      // insert new declarations only after all inner function declarations in that function body to
+      // preserve normalization
+      insertSpot =
+          NodeUtil.getInsertionPointAfterAllInnerFunctionDeclarations(function.getLastChild());
+      if (insertSpot != null) {
+        newDecl.insertBefore(insertSpot);
+      } else {
+        // functionBody only contains hoisted function declarations
+        function.getLastChild().addChildToBack(newDecl);
+      }
     } else {
       newDecl.insertAfter(insertSpot);
     }
-    return newDecl;
+
+    return rewriteVarDestructuringDeclaration(newDecl.getFirstChild());
+  }
+
+  /**
+   * Rewrites a destructuring declaration to a destructuring assignment.
+   *
+   * <p>For example, given the code `var [a, b] = ...;`, this function will convert it to `var a;
+   * var b; [a, b] = ...;`
+   *
+   * @param destructuringLhs the destructuring declaration to rewrite
+   * @return the expression result containing the assignment
+   */
+  private Node rewriteVarDestructuringDeclaration(Node destructuringLhs) {
+    checkState(destructuringLhs.isDestructuringLhs(), destructuringLhs);
+    checkState(
+        !destructuringLhs.getGrandparent().isExport(),
+        "Export destructuring declarations not expected inside a function body.");
+    Node var = destructuringLhs.getParent();
+
+    // create a stub declaration for each name in the destructuring pattern
+    // e.g. generate `var a; var b;` from `var [a, b] = ...;`
+    NodeUtil.visitLhsNodesInNode(
+        destructuringLhs,
+        (name) -> {
+          // Add a declaration outside the destructuring pattern for the given name.
+          checkState(
+              name.isName(),
+              "lhs in destructuring declaration should be a simple name. (%s)",
+              name);
+          Node newName = IR.name(name.getString()).srcref(name);
+          if (name.getBooleanProp(Node.IS_CONSTANT_NAME)) {
+            // if old name was a const, new name should be too
+            // e.g. when rewriting `{VALUE} = ...` the `VALUE` is const by coding convention
+            newName.putBooleanProp(Node.IS_CONSTANT_NAME, true);
+          }
+          Node newVar = IR.var(newName).srcref(name);
+          newVar.insertBefore(var);
+        });
+
+    // Transform destructuring var declaration to assignment. That is, `var [a, b] = ...` to `[a,
+    // b] = ...` and `var {a, b} = ...` to `({a, b} = ...);`
+    Node destructuringPattern = destructuringLhs.removeFirstChild();
+    checkState(
+        destructuringPattern.isDestructuringPattern(),
+        "Expected destructuring pattern but got %s",
+        destructuringPattern.toStringTree());
+
+    Node rhs = destructuringLhs.removeFirstChild();
+    Node assign = astFactory.createAssign(destructuringPattern, rhs);
+    assign.srcref(var);
+    Node expr = astFactory.exprResult(assign);
+    expr.srcref(var);
+
+    var.replaceWith(expr);
+    return expr;
   }
 
   /**

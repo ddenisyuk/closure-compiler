@@ -32,7 +32,7 @@ import com.google.javascript.rhino.NonJSDocComment;
 import com.google.javascript.rhino.QualifiedName;
 import com.google.javascript.rhino.Token;
 import com.google.javascript.rhino.TokenStream;
-import org.jspecify.nullness.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /** CodeGenerator generates codes from a parse tree, sending it to the specified CodeConsumer. */
 public class CodeGenerator {
@@ -418,7 +418,7 @@ public class CodeGenerator {
 
       case BIGINT:
         Preconditions.checkState(childCount == 0, node);
-        cc.add(node.getBigInt() + "n");
+        cc.addBigInt(node.getBigInt());
         break;
 
       case TYPEOF:
@@ -589,7 +589,7 @@ public class CodeGenerator {
           if (!superClass.isEmpty()) {
             add("extends");
 
-            // Parentheses are required for a comma expression
+            // Parentheses are required for a comma expression or an assignment expression.
             addExpr(superClass, 1, Context.OTHER);
           }
 
@@ -1875,6 +1875,9 @@ public class CodeGenerator {
         || isNullishCoalesceChildOfLogicalANDorLogicalOR(n)) {
       // precedence is not enough here since using && or || with ?? without parentheses
       // is a syntax error as ?? expands directly to |
+      return true;
+    } else if (n.isAssign() && n.getParent().isClass()) {
+      // Class declarations with assignments should be wrapped in parentheses.
       return true;
     } else {
       return precedence(n) < minPrecedence;

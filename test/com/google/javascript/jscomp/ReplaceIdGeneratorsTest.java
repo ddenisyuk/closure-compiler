@@ -20,7 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.javascript.jscomp.ReplaceIdGenerators.INVALID_GENERATOR_PARAMETER;
 
 import com.google.common.collect.ImmutableMap;
-import org.jspecify.nullness.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -351,6 +351,10 @@ public final class ReplaceIdGeneratorsTest extends CompilerTestCase {
     testNonPseudoSupportingGenerator(
         lines("/** @idGenerator {xid} */ id = function() {};", "f1 = id('foo');", "f1 = id('foo')"),
         lines("/** @idGenerator {xid} */ id = function() {};", "f1 = 'QB6rXc';", "f1 = 'QB6rXc'"));
+
+    testNonPseudoSupportingGenerator(
+        lines("/** @idGenerator {xid} */ id = function() {};", "f1 = id(`foo`);", "f1 = id(`foo`)"),
+        lines("/** @idGenerator {xid} */ id = function() {};", "f1 = 'QB6rXc';", "f1 = 'QB6rXc'"));
   }
 
   @Test
@@ -627,6 +631,14 @@ public final class ReplaceIdGeneratorsTest extends CompilerTestCase {
   public void testBadGenerator2() {
     testSame(
         "/** @idGenerator {consistent} */ id = function() {};" + "foo.bar = id()",
+        INVALID_GENERATOR_PARAMETER);
+  }
+
+  @Test
+  public void testBadGenerator3() {
+    testSame(
+        "/** @idGenerator {consistent} */ id = function() {};"
+            + "foo.bar = id(`hello${ ' '}world`)",
         INVALID_GENERATOR_PARAMETER);
   }
 

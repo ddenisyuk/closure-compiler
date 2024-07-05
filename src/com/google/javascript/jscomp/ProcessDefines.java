@@ -41,7 +41,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
-import org.jspecify.nullness.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Process variables annotated as {@code @define}. A define is a special constant that may be
@@ -55,7 +55,11 @@ class ProcessDefines implements CompilerPass {
    * always set these defines, even when they might not be in the binary.
    */
   private static final ImmutableSet<String> KNOWN_DEFINES =
-      ImmutableSet.of("COMPILED", "goog.DEBUG", "$jscomp.ISOLATE_POLYFILLS");
+      ImmutableSet.of(
+          "COMPILED",
+          "goog.DEBUG",
+          "$jscomp.ISOLATE_POLYFILLS",
+          "$jscomp.INSTRUMENT_ASYNC_CONTEXT");
 
   private static final Node GOOG_DEFINE = IR.getprop(IR.name("goog"), "define");
 

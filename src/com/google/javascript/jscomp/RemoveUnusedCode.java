@@ -45,7 +45,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Supplier;
-import org.jspecify.nullness.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Garbage collection for variable and function definitions. Basically performs a mark-and-sweep
@@ -786,10 +786,11 @@ class RemoveUnusedCode implements CompilerPass {
     switch (n.getToken()) {
       case NAME:
         // Need to work correctly after CollapseProperties.
-        return n.getString().equals("$jscomp$polyfill") && n.getNext().isStringLit();
+        return (n.getString().equals("$jscomp$polyfill") || n.getString().equals("$jscomp$patch"))
+            && n.getNext().isStringLit();
       case GETPROP:
         // Need to work correctly without CollapseProperties.
-        return n.getString().equals("polyfill")
+        return (n.getString().equals("polyfill") || n.getString().equals("patch"))
             && n.getFirstChild().isName()
             && n.getFirstChild().getString().equals("$jscomp")
             && n.getNext().isStringLit();
@@ -3074,10 +3075,10 @@ class RemoveUnusedCode implements CompilerPass {
    * whose names are stores as strings passed as the first argument to {@code $jscomp.polyfill}.
    * Each definition falls into one of three categories: (1) global names, such as {@code Map} or
    * {@code Promise}; (2) static properties, such as {@code Array.from} or {@code Reflect.get},
-   * which must always have exactly two name components; or (3) prototype properties, such as {@code
-   * String.prototype.repeat} or {@code Promise.prototype.finally}, which must always have exactly
-   * three name components. The definition can be removed once it is found that there are no
-   * references to it.
+   * which must always have exactly two name components (TODO(bradfordcsmith): is this assumption
+   * required?); or (3) prototype properties, such as {@code String.prototype.repeat} or {@code
+   * Promise.prototype.finally}, which must always have exactly three name components. The
+   * definition can be removed once it is found that there are no references to it.
    *
    * <p>References are ignored if they are "guarded". This allows removing, e.g, the Promise
    * polyfill if it is only referenced in `if (typeof Promise === 'function') { use(Promise); }`.

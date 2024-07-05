@@ -26,18 +26,13 @@ import com.google.javascript.rhino.IR;
 import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.Token;
 import java.util.ArrayDeque;
-import org.jspecify.nullness.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Peephole optimization to remove useless code such as IF's with false guard conditions, comma
  * operator's left hand sides with no side effects, etc.
  */
 class PeepholeRemoveDeadCode extends AbstractPeepholeOptimization {
-
-  // TODO(dcc): Some (all) of these can probably be better achieved
-  // using the control flow graph (like CheckUnreachableCode).
-  // There is an existing CFG pass (UnreachableCodeElimination) that
-  // could be changed to use code from CheckUnreachableCode to do this.
 
   @Override
   Node optimizeSubtree(Node subtree) {

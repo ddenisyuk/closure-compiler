@@ -1482,6 +1482,36 @@ Promise.allSettled = function(iterable) {};
  */
 Promise.race = function(iterable) {};
 
+/**
+ * Record type representing the return of Promise.withResolvers.
+ *
+ * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/withResolvers
+ * @record
+ * @template VALUE
+ */
+Promise.PromiseWithResolvers = function() {};
+
+/**
+ * @type {!Promise<VALUE>}
+ */
+Promise.PromiseWithResolvers.prototype.promise;
+
+/**
+ * @type {function((VALUE|IThenable<VALUE>|Thenable)=)}
+ */
+Promise.PromiseWithResolvers.prototype.resolve;
+
+/**
+ * @type {function(*=)}
+ */
+Promise.PromiseWithResolvers.prototype.reject;
+
+/**
+ * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/withResolvers
+ * @return {!Promise.PromiseWithResolvers<VALUE>}
+ * @template VALUE
+ */
+Promise.withResolvers = function() {};
 
 /**
  * @param {?(function(this:void, TYPE):VALUE)=} opt_onFulfilled
@@ -2347,8 +2377,8 @@ function FinalizationRegistry(cleanupCallback) {}
  * @param {TOKEN=} unregisterToken
  * @return {void}
  */
-FinalizationRegistry.prototype.register =
-    function(target, heldValue, unregisterToken) {};
+FinalizationRegistry.prototype.register = function(
+    target, heldValue, unregisterToken) {};
 
 /**
  * @param {TOKEN} unregisterToken
@@ -2360,3 +2390,39 @@ FinalizationRegistry.prototype.unregister = function(unregisterToken) {};
  * @type {!Global}
  */
 var globalThis;
+
+/**
+ * @const {symbol}
+ */
+Symbol.dispose;
+
+/**
+ * @const {symbol}
+ */
+Symbol.asyncDispose;
+
+/**
+ * Wraps an error that suppresses another error, and the error that was
+ * suppressed.
+ *
+ * @constructor
+ * @extends {Error}
+ * @param {?} error The error that resulted in a suppression.
+ * @param {?} suppressed The error that was suppressed.
+ * @param {string=} message The message for the error.
+ * @return {!SuppressedError}
+ * @nosideeffects
+ */
+function SuppressedError(error, suppressed, message) {}
+
+/**
+ * The error that resulted in a suppression.
+ * @type {?}
+ */
+SuppressedError.prototype.error;
+
+/**
+ * The error that was suppressed.
+ * @type {?}
+ */
+SuppressedError.prototype.suppressed;

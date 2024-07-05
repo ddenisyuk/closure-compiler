@@ -59,7 +59,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
-import org.jspecify.nullness.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.junit.Before;
 
 /**
@@ -1496,7 +1496,7 @@ public abstract class CompilerTestCase {
 
         if (polymerPass && i == 0) {
           recentChange.reset();
-          new PolymerPass(compiler, false).process(externsRoot, mainRoot);
+          new PolymerPass(compiler).process(externsRoot, mainRoot);
           hasCodeChanged = hasCodeChanged || recentChange.hasCodeChanged();
         }
 
@@ -1586,7 +1586,8 @@ public abstract class CompilerTestCase {
           } else if (replaceTypesWithColors) {
             recentChange.reset();
             new RemoveCastNodes(compiler).process(externsRoot, mainRoot);
-            new ConvertTypesToColors(compiler, SerializationOptions.INCLUDE_DEBUG_INFO)
+            new ConvertTypesToColors(
+                    compiler, SerializationOptions.builder().setIncludeDebugInfo(true).build())
                 .process(externsRoot, mainRoot);
 
             compiler.setLifeCycleStage(AbstractCompiler.LifeCycleStage.COLORS_AND_SIMPLIFIED_JSDOC);

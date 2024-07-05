@@ -401,7 +401,6 @@ public final class IntegrationTest extends IntegrationTestCase {
     CompilerOptions options = createCompilerOptions();
     options.setFoldConstants(true);
     options.setInlineVariables(true);
-    options.setRemoveUnreachableCode(true);
     test(options, "var x; x && alert(1);", "");
   }
 
@@ -1351,18 +1350,6 @@ public final class IntegrationTest extends IntegrationTestCase {
   }
 
   @Test
-  public void testOptimizeArgumentsArray() {
-    String code = "function f() { return arguments[0]; }";
-
-    CompilerOptions options = createCompilerOptions();
-    testSame(options, code);
-
-    options.setOptimizeArgumentsArray(true);
-    String argName = "JSCompiler_OptimizeArgumentsArray_p0";
-    test(options, code, "function f(" + argName + ") { return " + argName + "; }");
-  }
-
-  @Test
   public void testOptimizeParameters() {
     String code = "function f(a) {} f(true);";
 
@@ -1476,7 +1463,6 @@ public final class IntegrationTest extends IntegrationTestCase {
     options.setClosurePass(true);
     options.setCheckTypes(true);
     options.setDisambiguateProperties(true);
-    options.setRemoveUnreachableCode(true);
     options.setRemoveAbstractMethods(true);
     test(
         options,
@@ -1504,7 +1490,6 @@ public final class IntegrationTest extends IntegrationTestCase {
     options.setCheckTypes(true);
     options.setDisambiguateProperties(true);
     options.setPropertiesThatMustDisambiguate(ImmutableSet.of("a"));
-    options.setRemoveUnreachableCode(true);
     options.setRemoveAbstractMethods(true);
     test(
         options,
@@ -1531,7 +1516,7 @@ public final class IntegrationTest extends IntegrationTestCase {
   public void testMarkPureCalls() {
     String testCode = "function foo() {} foo();";
     CompilerOptions options = createCompilerOptions();
-    options.setRemoveUnreachableCode(true);
+    options.setFoldConstants(true);
 
     testSame(options, testCode);
 
@@ -1748,7 +1733,7 @@ public final class IntegrationTest extends IntegrationTestCase {
     String code = "function f() { return; f(); }";
     testSame(options, code);
 
-    options.setRemoveUnreachableCode(true);
+    options.setFoldConstants(true);
     test(options, code, "function f() {}");
   }
 
@@ -1784,7 +1769,6 @@ public final class IntegrationTest extends IntegrationTestCase {
 
     options.setCheckTypes(true);
     options.setDisambiguateProperties(true);
-    options.setRemoveUnreachableCode(true);
     options.setRemoveUnusedVariables(Reach.ALL);
     options.setRemoveUnusedPrototypeProperties(true);
     options.setSmartNameRemoval(true);
@@ -1832,7 +1816,6 @@ public final class IntegrationTest extends IntegrationTestCase {
 
     options.setCheckTypes(true);
     options.setDisambiguateProperties(true);
-    options.setRemoveUnreachableCode(true);
     options.setRemoveUnusedVariables(Reach.ALL);
     options.setRemoveUnusedPrototypeProperties(true);
     options.setSmartNameRemoval(true);
@@ -2837,18 +2820,19 @@ public final class IntegrationTest extends IntegrationTestCase {
         lines(
             "class Foo {",
             "  bar() {",
-            "    return $jscomp.asyncExecutePromiseGeneratorFunction(function*() {",
+            "    return (0, $jscomp.asyncExecutePromiseGeneratorFunction)(function*() {",
             "      console.log(\"bar\");",
             "    });",
             "  }",
             "}",
             "class Baz extends Foo {",
             "  bar() {",
-            "    const $jscomp$async$this = this, $jscomp$async$super$get$bar =",
+            "    const $jscomp$async$this$98447280$3 = this, $jscomp$async$super$get$98447280$5$bar"
+                + " =",
             "        () => super.bar;",
-            "    return $jscomp.asyncExecutePromiseGeneratorFunction(function*() {",
+            "    return (0, $jscomp.asyncExecutePromiseGeneratorFunction)(function*() {",
             "      yield Promise.resolve();",
-            "      $jscomp$async$super$get$bar().call($jscomp$async$this);",
+            "      $jscomp$async$super$get$98447280$5$bar().call($jscomp$async$this$98447280$3);",
             "    });",
             "  }",
             "}"));
@@ -2897,11 +2881,12 @@ public final class IntegrationTest extends IntegrationTestCase {
             "}",
             "class Baz extends Foo {",
             "  bar() {",
-            "    const $jscomp$asyncIter$this = this,",
+            "    const $jscomp$asyncIter$this$98447280$1 = this,",
             "          $jscomp$asyncIter$super$get$bar =",
             "              () => super.bar;",
             "    return new $jscomp.AsyncGeneratorWrapper(function*() {",
-            "      $jscomp$asyncIter$super$get$bar().call($jscomp$asyncIter$this).next();",
+            "     "
+                + " $jscomp$asyncIter$super$get$bar().call($jscomp$asyncIter$this$98447280$1).next();",
             "    }());",
             "  }",
             "}"));
@@ -3107,7 +3092,7 @@ public final class IntegrationTest extends IntegrationTestCase {
     test(
         options,
         "if (((x < 1 || x > 1) || 1 < x) || 1 > x) { alert(x) }",
-        "   (((1 > x || 1 < x) || 1 < x) || 1 > x) && alert(x) ");
+        "   (((x < 1 || x > 1) || 1 < x) || 1 > x) && alert(x) ");
   }
 
   @Test
@@ -3726,7 +3711,7 @@ public final class IntegrationTest extends IntegrationTestCase {
             "if (/** @type {Array|undefined} */ (window['c']) === null) {",
             "  window['d'] = 12;",
             "}"),
-        "null===window['c']&&(window['d']=12)");
+        "window['c']===null&&(window['d']=12)");
   }
 
   @Test
@@ -3830,17 +3815,17 @@ public final class IntegrationTest extends IntegrationTestCase {
             "function foo() {",
             "  var JSCompiler_temp_const;",
             "  var JSCompiler_temp_const$jscomp$0;",
-            "  return $jscomp.asyncExecutePromiseGeneratorProgram(",
-            "      function ($jscomp$generator$context$98447280$0) {",
-            "        if ($jscomp$generator$context$98447280$0.nextAddress == 1) {",
+            "  return (0, $jscomp.asyncExecutePromiseGeneratorProgram)(",
+            "      function ($jscomp$generator$context$98447280$5) {",
+            "        if ($jscomp$generator$context$98447280$5.nextAddress == 1) {",
             "          JSCompiler_temp_const = A;",
             "          JSCompiler_temp_const$jscomp$0 = A$doSomething;",
-            "          return $jscomp$generator$context$98447280$0.yield(3, 2);",
+            "          return $jscomp$generator$context$98447280$5.yield(3, 2);",
             "        }",
             "        JSCompiler_temp_const$jscomp$0.call(",
             "            JSCompiler_temp_const,",
-            "            $jscomp$generator$context$98447280$0.yieldResult);",
-            "        $jscomp$generator$context$98447280$0.jumpToEnd();",
+            "            $jscomp$generator$context$98447280$5.yieldResult);",
+            "        $jscomp$generator$context$98447280$5.jumpToEnd();",
             "      });",
             "}",
             "foo();"));
@@ -3940,7 +3925,8 @@ public final class IntegrationTest extends IntegrationTestCase {
             "async function abc() {",
             "  var $jscomp$forAwait$retFn0;",
             "  try {",
-            "    for (var $jscomp$forAwait$tempIterator0 = $jscomp.makeAsyncIterator(foo());;) {",
+            "    for (var $jscomp$forAwait$tempIterator0 = (0, $jscomp.makeAsyncIterator)(foo());;)"
+                + " {",
             "      var $jscomp$forAwait$tempResult0 = await $jscomp$forAwait$tempIterator0.next();",
             "      if ($jscomp$forAwait$tempResult0.done) {",
             "        break;",
@@ -4804,7 +4790,6 @@ public final class IntegrationTest extends IntegrationTestCase {
     CompilationLevel.ADVANCED_OPTIMIZATIONS.setOptionsForCompilationLevel(options);
     options.setLanguageOut(LanguageMode.ECMASCRIPT_2016);
 
-    options.setRemoveUnreachableCode(false);
     options.setRemoveUnusedVariables(Reach.NONE);
     options.setRemoveUnusedClassProperties(false);
 

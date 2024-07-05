@@ -77,7 +77,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import org.jspecify.nullness.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /** Checks the types of JS expressions against any declared type information. */
 public final class TypeCheck implements NodeTraversal.Callback, CompilerPass {
@@ -383,6 +383,9 @@ public final class TypeCheck implements NodeTraversal.Callback, CompilerPass {
           UNKNOWN_OVERRIDE,
           UNKNOWN_PROTOTYPAL_OVERRIDE,
           WRONG_ARGUMENT_COUNT);
+
+  public static final DiagnosticGroup ES5_INHERITANCE_DIAGNOSTIC_GROUP =
+      new DiagnosticGroup(ES5_CLASS_EXTENDING_ES6_CLASS);
 
   private final AbstractCompiler compiler;
   private final TypeValidator validator;

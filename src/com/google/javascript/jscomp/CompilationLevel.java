@@ -18,7 +18,7 @@ package com.google.javascript.jscomp;
 
 import com.google.javascript.jscomp.CompilerOptions.PropertyCollapseLevel;
 import com.google.javascript.jscomp.CompilerOptions.Reach;
-import org.jspecify.nullness.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * A CompilationLevel represents the level of optimization that should be
@@ -130,7 +130,6 @@ public enum CompilationLevel {
     options.setCollapseVariableDeclarations(true);
     options.convertToDottedProperties = true;
     options.labelRenaming = true;
-    options.setRemoveUnreachableCode(true);
     options.setOptimizeArgumentsArray(true);
     options.setRemoveUnusedVariables(Reach.LOCAL_ONLY);
     options.collapseObjectLiterals = true;
@@ -161,7 +160,6 @@ public enum CompilationLevel {
     options.setCollapseVariableDeclarations(true);
     options.setConvertToDottedProperties(true);
     options.setLabelRenaming(true);
-    options.setRemoveUnreachableCode(true);
     options.setOptimizeArgumentsArray(true);
     options.setCollapseObjectLiterals(true);
     options.setProtectHiddenSideEffects(true);

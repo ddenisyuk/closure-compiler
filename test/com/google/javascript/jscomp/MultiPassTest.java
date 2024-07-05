@@ -90,7 +90,7 @@ public final class MultiPassTest extends CompilerTestCase {
   public void testInlineVarsAndDeadCodeElim() {
     passes = new ArrayList<>();
     addInlineVariables();
-    addDeadCodeElimination();
+    addPeephole();
     test("function f() { var x = 1; return x; x = 3; }", "function f() { return 1; }");
   }
 
@@ -146,8 +146,9 @@ public final class MultiPassTest extends CompilerTestCase {
         lines(
             "var foo = function(x,y) {return x===y;};",
             "var f = function ($jscomp$destructuring$var0) {",
+            "   var value;",
             "   var $jscomp$destructuring$var1 = $jscomp$destructuring$var0;",
-            "   var value = $jscomp$destructuring$var1.key;",
+            "   value = $jscomp$destructuring$var1.key;",
             "   return foo('v', value);",
             "};",
             "f({key:'v'})"));
@@ -166,7 +167,7 @@ public final class MultiPassTest extends CompilerTestCase {
                 "x = function () {",
                 "   let $jscomp$destructuring$var0 = [1,2];",
                 "   var $jscomp$destructuring$var1 = ",
-                "       $jscomp.makeIterator($jscomp$destructuring$var0);",
+                "       (0, $jscomp.makeIterator)($jscomp$destructuring$var0);",
                 "   a = $jscomp$destructuring$var1.next().value;",
                 "   b = $jscomp$destructuring$var1.next().value;",
                 "   return $jscomp$destructuring$var0;",
@@ -188,7 +189,7 @@ public final class MultiPassTest extends CompilerTestCase {
                 "   return function () {",
                 "       let $jscomp$destructuring$var0 = [1,2];",
                 "       var $jscomp$destructuring$var1 = ",
-                "$jscomp.makeIterator($jscomp$destructuring$var0);",
+                "(0, $jscomp.makeIterator)($jscomp$destructuring$var0);",
                 "       a = $jscomp$destructuring$var1.next().value;",
                 "       b = $jscomp$destructuring$var1.next().value;",
                 "       return $jscomp$destructuring$var0;",
@@ -212,7 +213,7 @@ public final class MultiPassTest extends CompilerTestCase {
                 " x = function () {",
                 "   let $jscomp$destructuring$var0 = [1,2];",
                 "   var $jscomp$destructuring$var1 = ",
-                "       $jscomp.makeIterator($jscomp$destructuring$var0);",
+                "       (0, $jscomp.makeIterator)($jscomp$destructuring$var0);",
                 "   a = $jscomp$destructuring$var1.next().value;",
                 "   b = $jscomp$destructuring$var1.next().value;",
                 "   return $jscomp$destructuring$var0;",
@@ -239,7 +240,7 @@ public final class MultiPassTest extends CompilerTestCase {
                 "   let $jscomp$destructuring$var0 = ",
                 "       /\\.?([^.]+)$/.exec(prefix);",
                 "   var $jscomp$destructuring$var1 = ",
-                "$jscomp.makeIterator($jscomp$destructuring$var0);",
+                "(0, $jscomp.makeIterator)($jscomp$destructuring$var0);",
                 "   $jscomp$destructuring$var1.next();",
                 "   prefix = $jscomp$destructuring$var1.next().value;",
                 "   return $jscomp$destructuring$var0;",
@@ -266,7 +267,7 @@ public final class MultiPassTest extends CompilerTestCase {
                 "   let $jscomp$destructuring$var0 = ",
                 "       /\\.?([^.]+)$/.exec(prefix)",
                 "   var $jscomp$destructuring$var1 = ",
-                "$jscomp.makeIterator($jscomp$destructuring$var0);",
+                "(0, $jscomp.makeIterator)($jscomp$destructuring$var0);",
                 "   $jscomp$destructuring$var1.next();",
                 "   prefix = $jscomp$destructuring$var1.next().value;",
                 "   return $jscomp$destructuring$var0;",
@@ -288,7 +289,7 @@ public final class MultiPassTest extends CompilerTestCase {
                 "for (; x < 3; function () {",
                 "   let $jscomp$destructuring$var0 = [3,4]",
                 "   var $jscomp$destructuring$var1 = ",
-                "       $jscomp.makeIterator($jscomp$destructuring$var0);",
+                "       (0, $jscomp.makeIterator)($jscomp$destructuring$var0);",
                 "   x = $jscomp$destructuring$var1.next().value;",
                 "   return $jscomp$destructuring$var0;",
                 " } ()){",
@@ -365,9 +366,8 @@ public final class MultiPassTest extends CompilerTestCase {
     passes = new ArrayList<>();
     addRenameVariablesInParamListsPass();
     addSplitVariableDeclarationsPass();
-    addDestructuringPass();
     addNormalization(); // adding normalization triggers {@code ValidityCheck.checkVars}
-
+    addDestructuringPass();
     addArrowFunctionPass();
   }
 
@@ -387,15 +387,6 @@ public final class MultiPassTest extends CompilerTestCase {
             .setInternalFactory(
                 (compiler) ->
                     new InlineObjectLiterals(compiler, compiler.getUniqueNameIdSupplier()))
-            .build());
-  }
-
-  private void addDeadCodeElimination() {
-    passes.add(
-        PassFactory.builder()
-            .setName("removeUnreachableCode")
-            .setRunInFixedPointLoop(true)
-            .setInternalFactory(UnreachableCodeElimination::new)
             .build());
   }
 

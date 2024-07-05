@@ -70,7 +70,18 @@ public class TranspilationPasses {
    * they're responsible for removing exists in the script.
    */
   public static void addEarlyOptimizationTranspilationPasses(
+      PassListBuilder passes, CompilerOptions options) {}
+
+  /**
+   * Adds transpilation passes that should not be run until after normalization has been done.
+   * Passes added in this method either use {@code TranspilationPasses.processTranspile} or
+   * early-exit by checking their feature in the script's featureset. So they will only get run if
+   * the feature they're responsible for removing exists in the script.
+   */
+  public static void addPostNormalizationTranspilationPasses(
       PassListBuilder passes, CompilerOptions options) {
+    // TODO(b/197349249): Move passes from `addEarlyOptimizationTranspilationPasses()` to here
+    // until that method can be deleted as a no-op.
 
     passes.maybeAdd(reportUntranspilableFeatures);
 
@@ -125,10 +136,10 @@ public class TranspilationPasses {
       passes.maybeAdd(rewriteNullishCoalesceOperator);
     }
 
+    // TODO(b/197349249): Can this be done conditionally as part of another pass?
     if (options.needsTranspilationOf(Feature.OPTIONAL_CATCH_BINDING)) {
       passes.maybeAdd(rewriteCatchWithNoBinding);
     }
-
     if (options.getChunkOutputType() != ChunkOutputType.ES_MODULES) {
       // Default output mode of JSCompiler is a script, unless chunkOutputType is set to
       // `ES_MODULES` where each output chunk is an ES module.
@@ -155,6 +166,7 @@ public class TranspilationPasses {
         // all destructuring.
         // For this to work correctly for object destructuring in parameter lists and variable
         // declarations, we need to normalize them a bit first.
+        // TODO(b/197349249): Delete these as they're redundant with normalization.
         passes.maybeAdd(es6RenameVariablesInParamLists);
         passes.maybeAdd(es6SplitVariableDeclarations);
         passes.maybeAdd(
@@ -187,32 +199,29 @@ public class TranspilationPasses {
               Feature.REGEXP_FLAG_Y));
     }
 
+    // TODO(b/329447979): Merge this with another pass and delete this pass.
     if (options.needsTranspilationOf(Feature.EXTENDED_OBJECT_LITERALS)) {
       passes.maybeAdd(es6NormalizeShorthandProperties);
     }
+
     if (options.needsTranspilationOf(Feature.CLASSES)) {
       passes.maybeAdd(es6ConvertSuper);
     }
+
+    // TODO(b/197349249): Delete these as they're redundant with normalization.
     if (options.needsTranspilationFrom(
         FeatureSet.BARE_MINIMUM.with(Feature.ARRAY_DESTRUCTURING, Feature.OBJECT_DESTRUCTURING))) {
       passes.maybeAdd(es6RenameVariablesInParamLists);
       passes.maybeAdd(es6SplitVariableDeclarations);
+    }
+
+    if (options.needsTranspilationFrom(
+        FeatureSet.BARE_MINIMUM.with(Feature.ARRAY_DESTRUCTURING, Feature.OBJECT_DESTRUCTURING))) {
       passes.maybeAdd(
           getEs6RewriteDestructuring(ObjectDestructuringRewriteMode.REWRITE_ALL_OBJECT_PATTERNS));
     }
-  }
 
-  /**
-   * Adds transpilation passes that should not be run until after normalization has been done.
-   * Passes added in this method either use {@code TranspilationPasses.processTranspile} or
-   * early-exit by checking their feature in the script's featureset. So they will only get run if
-   * the feature they're responsible for removing exists in the script.
-   */
-  public static void addPostNormalizationTranspilationPasses(
-      PassListBuilder passes, CompilerOptions options) {
-    // TODO(b/197349249): Move passes from `addEarlyOptimizationTranspilationPasses()` to here
-    // until that method can be deleted as a no-op.
-
+    // TODO(b/329447979): Merge with es6RewriteClass and delete this pass.
     if (options.needsTranspilationOf(Feature.NEW_TARGET)) {
       passes.maybeAdd(rewriteNewDotTarget);
     }
@@ -262,6 +271,11 @@ public class TranspilationPasses {
   /** Adds the pass to inject ES2015 polyfills, which goes after the late ES2015 passes. */
   public static void addRewritePolyfillPass(PassListBuilder passes) {
     passes.maybeAdd(rewritePolyfills);
+  }
+
+  /** Adds a pass to wrap `await` and `yield` to preserve AsyncContext correctly. */
+  public static void addInstrumentAsyncContextPass(PassListBuilder passes) {
+    passes.maybeAdd(instrumentAsyncContext);
   }
 
   /** Rewrites ES6 modules */
@@ -376,6 +390,19 @@ public class TranspilationPasses {
                       compiler,
                       compiler.getOptions().getRewritePolyfills(),
                       compiler.getOptions().getIsolatePolyfills()))
+          .build();
+
+  static final PassFactory instrumentAsyncContext =
+      PassFactory.builder()
+          .setName("InstrumentAsyncContext")
+          .setInternalFactory(
+              (compiler) ->
+                  new InstrumentAsyncContext(
+                      compiler,
+                      compiler
+                          .getOptions()
+                          .getOutputFeatureSet()
+                          .contains(Feature.ASYNC_FUNCTIONS)))
           .build();
 
   static final PassFactory es6SplitVariableDeclarations =

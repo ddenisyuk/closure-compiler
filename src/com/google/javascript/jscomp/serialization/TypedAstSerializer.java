@@ -36,7 +36,7 @@ import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.jstype.JSType;
 import java.util.ArrayDeque;
 import java.util.LinkedHashMap;
-import org.jspecify.nullness.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /** Transforms a compiler AST into a serialized TypedAst object. */
 @GwtIncompatible("protobuf.lite")
@@ -104,6 +104,7 @@ final class TypedAstSerializer {
     }
 
     return builder
+        .addAllRuntimeLibraryToInject(serializationMode.getRuntimeLibraries())
         .setTypePool(typeSerializer.generateTypePool())
         .setStringPool(this.stringPool.build().toProto())
         .setSourceFilePool(sourceFiles)

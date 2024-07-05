@@ -30,7 +30,7 @@ import com.google.javascript.rhino.JSDocInfo;
 import com.google.javascript.rhino.Node;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import org.jspecify.nullness.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Extracts ES6 classes defined in function calls to local constants.
@@ -143,6 +143,10 @@ public final class Es6ExtractClasses extends NodeTraversal.AbstractPostOrderCall
           if (var != null && var.getNameNode() == klass.nameNode) {
             Node newNameNode =
                 astFactory.createName(klass.outerName, type(nameNode)).srcref(nameNode);
+            checkState(klass.outerName.contains(CLASS_DECL_VAR), klass.outerName);
+            // Explicitly mark the usage node as constant as the declaration is marked constant
+            // when this pass runs post normalization because of b/322009741
+            newNameNode.putBooleanProp(Node.IS_CONSTANT_NAME, true);
             nameNode.replaceWith(newNameNode);
             compiler.reportChangeToEnclosingScope(newNameNode);
             return;

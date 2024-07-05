@@ -27,7 +27,7 @@ import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.Token;
 import java.util.Set;
 import java.util.regex.Pattern;
-import org.jspecify.nullness.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /** Checks for misplaced, misused or deprecated JSDoc annotations. */
 final class CheckJSDoc extends AbstractPostOrderCallback implements CompilerPass {
@@ -346,10 +346,30 @@ final class CheckJSDoc extends AbstractPostOrderCallback implements CompilerPass
       return;
     }
 
-    Node functionNode = getFunctionDecl(n);
+    // @abstract annotation on a function written as a class field.
+    if (n.isGetProp()) {
+      if (!(n.getFirstChild().isThis() && info.getReturnType() != null)) {
+        report(
+            n,
+            MISPLACED_ANNOTATION,
+            "@abstract",
+            "abstract undeclared methods can only be written as class fields");
+      } else if (!(n.getParent().isExprResult()
+          && n.getGrandparent().isBlock()
+          && n.getParent().getGrandparent().isFunction())) {
+        report(
+            n,
+            MISPLACED_ANNOTATION,
+            "@abstract",
+            "abstract methods without an initializer must be declared in a constructor function.");
+        return;
+      }
+      return;
+    }
 
+    // @abstract annotation on a non-function
+    Node functionNode = getFunctionDecl(n);
     if (functionNode == null) {
-      // @abstract annotation on a non-function
       report(
           n,
           MISPLACED_ANNOTATION,

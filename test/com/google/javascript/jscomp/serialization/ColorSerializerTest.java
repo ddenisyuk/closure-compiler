@@ -37,7 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import org.jspecify.nullness.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -60,7 +60,7 @@ public class ColorSerializerTest {
                 .build());
 
     new Tester()
-        .setSerializationMode(SerializationOptions.SKIP_DEBUG_INFO)
+        .setSerializationMode(SerializationOptions.builder().setIncludeDebugInfo(false).build())
         .init()
         // don't add anything
         .generateTypePool()
@@ -356,7 +356,7 @@ public class ColorSerializerTest {
             .build();
 
     new Tester()
-        .setSerializationMode(SerializationOptions.SKIP_DEBUG_INFO)
+        .setSerializationMode(SerializationOptions.builder().setIncludeDebugInfo(false).build())
         .init()
         .addColors(testColor1, testColor2, testColor3, testColor4)
         .addMismatch(testMismatch1)
@@ -702,7 +702,7 @@ public class ColorSerializerTest {
     // If the test case includes information that doesn't make it into the expected result,
     // then I want the test case to clearly request that the information be omitted.
     private SerializationOptions serializationMode =
-        SerializationOptions.INCLUDE_DEBUG_INFO_AND_EXPENSIVE_VALIDITY_CHECKS;
+        SerializationOptions.builder().setIncludeDebugInfo(true).setRunValidation(true).build();
     // Tells ColorSerializer which property names to serialize
     private Predicate<String> propertyNameFilter = propName -> true;
 

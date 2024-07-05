@@ -64,7 +64,11 @@ public class DiagnosticGroups {
   static final DiagnosticType UNUSED = DiagnosticType.warning("JSC_UNUSED", "{0}");
 
   public static final ImmutableSet<String> wildcardExcludedGroups =
-      ImmutableSet.of("reportUnknownTypes", "analyzerChecks", "missingSourcesWarnings");
+      ImmutableSet.of(
+          "reportUnknownTypes",
+          "analyzerChecks",
+          "missingSourcesWarnings",
+          "closureUnawareCodeAnnotationPresent");
 
   public DiagnosticGroups() {}
 
@@ -299,6 +303,10 @@ public class DiagnosticGroups {
           TypeCheck.ALL_DIAGNOSTICS,
           FunctionTypeBuilder.ALL_DIAGNOSTICS,
           DiagnosticGroups.GLOBAL_THIS);
+
+  public static final DiagnosticGroup ES5_INHERITANCE_DIAGNOSTIC_GROUP =
+      DiagnosticGroups.registerGroup(
+          "checkEs5InheritanceCorrectnessConditions", TypeCheck.ES5_INHERITANCE_DIAGNOSTIC_GROUP);
 
   public static final DiagnosticGroup CHECK_PROTOTYPAL_TYPES =
       DiagnosticGroups.registerGroup(
@@ -708,6 +716,15 @@ public class DiagnosticGroups {
   // given error is from parsing.
   public static final DiagnosticGroup PARSING =
       DiagnosticGroup.forType(RhinoErrorReporter.PARSE_ERROR);
+
+  public static final DiagnosticGroup CLOSURE_UNAWARE_CODE_ANNOTATION_PRESENT =
+      DiagnosticGroups.registerGroup( // undocumented
+          // Deliberately undocumented and unsuppressable per-file, but this should be OK because
+          // the diagnostics are disabled by default.
+          // They can be enabled by explicitly enabling them using
+          // `--jscomp_error=closureUnawareCodeAnnotationPresent`.
+          "closureUnawareCodeAnnotationPresent",
+          RhinoErrorReporter.CLOSURE_UNAWARE_ANNOTATION_PRESENT);
 
   // For internal use only, so there are no constants for these groups.
   static {

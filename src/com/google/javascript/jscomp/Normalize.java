@@ -27,11 +27,13 @@ import com.google.javascript.rhino.IR;
 import com.google.javascript.rhino.JSDocInfo;
 import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.Token;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.jspecify.nullness.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The goal with this pass is to simplify the other passes, by making less complex statements.
@@ -354,10 +356,6 @@ final class Normalize implements CompilerPass {
           }
           break;
 
-        case EXPORT:
-          splitExportDeclaration(n);
-          break;
-
         case ARRAYLIT:
         case CALL:
         case PARAM_LIST:
@@ -370,6 +368,10 @@ final class Normalize implements CompilerPass {
         case NAME:
           annotateConstantsByConvention(n);
           annotateFunctionExpressionNameAsConstant(n);
+          break;
+
+        case DESTRUCTURING_LHS:
+          normalizeDestructuringLhs(n);
           break;
 
         case ASSIGN_OR:
@@ -413,6 +415,7 @@ final class Normalize implements CompilerPass {
       if (n.getBooleanProp(Node.EXPORT_DEFAULT)) {
         return;
       }
+      List<Node> destructuringLhsNodes = new ArrayList<>();
       Node c = n.getFirstChild();
       if (NodeUtil.isDeclaration(c)) {
         c.detach();
@@ -431,8 +434,18 @@ final class Normalize implements CompilerPass {
             child.detach();
             Node newDeclaration = new Node(c.getToken(), child).srcref(n);
             newDeclaration.insertBefore(n);
+            if (child.isDestructuringLhs()) {
+              // `export {a, b} = ...` changed to `var {a,b} = ...; export {a, b};`
+              // Hence we must normalize the destructuring declaration.
+              destructuringLhsNodes.add(child);
+            }
             child = next;
           }
+        }
+
+        // normalize the newly added destructuring var declarations
+        for (Node destructuringLhsNode : destructuringLhsNodes) {
+          normalizeDestructuringLhs(destructuringLhsNode);
         }
 
         reportCodeChange("combined export and declaration", n.getParent());
@@ -474,6 +487,7 @@ final class Normalize implements CompilerPass {
       // Only inspect the children of SCRIPTs, BLOCKs and LABELs, as all these
       // are the only legal place for VARs and FOR statements.
       if (NodeUtil.isStatementBlock(n) || n.isLabel()) {
+        // makes sure that var [a,b] destructuring from for-loop initializer is also extracted
         extractForInitializer(n, null, null);
       }
 
@@ -487,10 +501,104 @@ final class Normalize implements CompilerPass {
         moveNamedFunctions(n.getLastChild());
       }
 
+      if (NodeUtil.isClassStaticBlock(n)) {
+        moveNamedFunctions(n);
+      }
+
+      if (n.isExport()) {
+        // Perform the split in pre-order traversal to accurately normalize destructuring
+        // declarations.
+        splitExportDeclaration(n);
+      }
+
       if (NodeUtil.isCompoundAssignmentOp(n) && !NodeUtil.isLogicalAssignmentOp(n)) {
         // Logical assignments should be handled in visit(), not here
         normalizeAssignShorthand(n);
       }
+    }
+
+    /**
+     * Split a var destructuring declaration into stub declarations of individual LHS name nodes
+     * following by the destructuring pattern assignment.
+     */
+    private void normalizeDestructuringLhs(Node n) {
+      if (isVarDestructuringDeclaration(n)) {
+        rewriteVarDestructuringDeclaration(n);
+      }
+    }
+
+    /** Is this a var destructuring LHS like `[a,b]` in `var [a,b] = ...` */
+    private boolean isVarDestructuringDeclaration(Node n) {
+      return n.isDestructuringLhs() // `[a,b]`
+          && (n.getFirstChild().isArrayPattern()
+              || n.getFirstChild()
+                  .isObjectPattern()) // `var [a,b] = [5,6];` or `var {a,b} = {a: 5, b: 6};`
+          && n.getParent().isVar(); // `var [a,b] = [5,6];`
+    }
+
+    /**
+     * Transforms a var destructuring array declarations into stub declarations of the individual
+     * lhs names within the array. For example:
+     *
+     * <pre>
+     *    var [a, b = 3] = ....
+     * to:
+     *    var a; var b; [a, b = 3] = ...
+     * </pre>
+     *
+     * Same for object destructuring declarations. For example:
+     *
+     * <pre>
+     *    var {a, b = 3} = ....
+     * to:
+     *    var a; var b; ({a, b = 3} = ...);
+     * </pre>
+     *
+     * Before this function is used, {@code extractForInitializer} has already run during pre-order
+     * traversal, so we need not worry about destructuring declarations in the for loop initializers
+     * (e.g. `for (var [a,b] ...)` is already rewritten before this). Also, export declarations are
+     * already handled in `splitExportDeclaration` during pre-order traversal.
+     */
+    private void rewriteVarDestructuringDeclaration(Node destructuringLhs) {
+      checkState(
+          !destructuringLhs.getGrandparent().isExport(),
+          "Export destructuring declarations should be already handled in `splitExportDeclaration`"
+              + " during pre-order traversal.");
+      Node var = destructuringLhs.getParent();
+
+      // create a stub declaration for each name in the destructuring pattern
+      NodeUtil.visitLhsNodesInNode(
+          destructuringLhs,
+          (name) -> {
+            // Add a declaration outside the destructuring pattern for the given name.
+            checkState(
+                name.isName(),
+                "lhs in destructuring declaration should be a simple name. (%s)",
+                name);
+            Node newName = IR.name(name.getString()).srcref(name);
+            if (name.getBooleanProp(Node.IS_CONSTANT_NAME)) {
+              // if old name was a const, new name should be too
+              // e.g. when rewriting `{VALUE} = ...` the `VALUE` is const by coding convention
+              newName.putBooleanProp(Node.IS_CONSTANT_NAME, true);
+            }
+            Node newVar = IR.var(newName).srcref(name);
+            newVar.insertBefore(var);
+          });
+
+      // Transform destructuring var declaration to assignment. That is, `var [a, b] = ...` to `[a,
+      // b] = ...` and `var {a, b} = ...` to `({a, b} = ...);`
+      Node destructuringPattern = destructuringLhs.removeFirstChild();
+      checkState(destructuringPattern.isDestructuringPattern(), "Expected destructuring pattern.");
+
+      Node rhs = destructuringLhs.removeFirstChild();
+      Node assign = astFactory.createAssign(destructuringPattern, rhs);
+      assign.srcref(var);
+      Node expr = astFactory.exprResult(assign);
+      expr.srcref(var);
+
+      var.replaceWith(expr);
+      destructuringLhs.detach();
+      reportCodeChange("Var destructuring declaration rewritten", expr);
     }
 
     // TODO(johnlenz): Move this to NodeTypeNormalizer once the unit tests are
@@ -647,12 +755,12 @@ final class Normalize implements CompilerPass {
 
     /**
      * Move all the functions that are valid at the execution of the first statement of the function
-     * to the beginning of the function definition.
+     * or static block to the beginning of the function definition or class static block.
      */
-    private void moveNamedFunctions(Node functionBody) {
-      checkState(functionBody.getParent().isFunction());
+    private void moveNamedFunctions(Node body) {
+      checkState(body.getParent().isFunction() || NodeUtil.isClassStaticBlock(body));
       Node insertAfter = null;
-      Node current = functionBody.getFirstChild();
+      Node current = body.getFirstChild();
       // Skip any declarations at the beginning of the function body, they
       // are already in the right place.
       while (current != null && NodeUtil.isFunctionDeclaration(current)) {
@@ -670,8 +778,9 @@ final class Normalize implements CompilerPass {
 
           // Read the function at the top of the function body (after any
           // previous declarations).
-          insertAfter = addToFront(functionBody, current, insertAfter);
-          reportCodeChange("Move function declaration not at top of function", functionBody);
+          insertAfter = addToFront(body, current, insertAfter);
+          reportCodeChange(
+              "Move function declaration not at top of function or class static block", body);
         }
         current = next;
       }
@@ -742,7 +851,6 @@ final class Normalize implements CompilerPass {
         }
       } else if (parent.isVar()) {
         checkState(parent.hasOneChild());
-
         replaceVarWithAssignment(n, parent, parent.getParent());
       }
     }

@@ -33,7 +33,6 @@ import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.primitives.Chars;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
-import com.google.errorprone.annotations.InlineMe;
 import com.google.errorprone.annotations.RestrictedApi;
 import com.google.javascript.jscomp.annotations.LegacySetFeatureSetCaller;
 import com.google.javascript.jscomp.base.Tri;
@@ -58,7 +57,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
-import org.jspecify.nullness.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /** Compiler options */
 public class CompilerOptions implements Serializable {
@@ -493,9 +492,6 @@ public class CompilerOptions implements Serializable {
   /** Removes code associated with unused global names */
   public boolean smartNameRemoval;
 
-  /** Removes code that will never execute */
-  public boolean removeUnreachableCode;
-
   public enum ExtractPrototypeMemberDeclarationsMode {
     OFF,
     USE_GLOBAL_TEMP,
@@ -864,6 +860,9 @@ public class CompilerOptions implements Serializable {
 
   /** Isolates injected polyfills from the global scope. */
   private boolean isolatePolyfills = false;
+
+  /** Whether to instrument reentrant functions for AsyncContext. */
+  private boolean instrumentAsyncContext = false;
 
   /** Runtime libraries to always inject. */
   List<String> forceLibraryInjection = ImmutableList.of();
@@ -1335,7 +1334,6 @@ public class CompilerOptions implements Serializable {
     inlineVariables = false;
     inlineLocalVariables = false;
     smartNameRemoval = false;
-    removeUnreachableCode = false;
     extractPrototypeMemberDeclarations = ExtractPrototypeMemberDeclarationsMode.OFF;
     removeUnusedPrototypeProperties = false;
     removeUnusedClassProperties = false;
@@ -2109,19 +2107,6 @@ public class CompilerOptions implements Serializable {
     }
   }
 
-  /**
-   * @deprecated Use {@link #setRemoveUnreachableCode} instead.
-   */
-  @InlineMe(replacement = "this.setRemoveUnreachableCode(removeUnreachableCode)")
-  @Deprecated
-  public final void setRemoveDeadCode(boolean removeUnreachableCode) {
-    setRemoveUnreachableCode(removeUnreachableCode);
-  }
-
-  public void setRemoveUnreachableCode(boolean removeUnreachableCode) {
-    this.removeUnreachableCode = removeUnreachableCode;
-  }
-
   public void setExtractPrototypeMemberDeclarations(boolean enabled) {
     this.extractPrototypeMemberDeclarations =
         enabled
@@ -2635,6 +2620,16 @@ public class CompilerOptions implements Serializable {
     return this.isolatePolyfills;
   }
 
+  /** Sets whether to isolate polyfills from the global scope. */
+  public void setInstrumentAsyncContext(boolean instrumentAsyncContext) {
+    this.instrumentAsyncContext = instrumentAsyncContext;
+    this.setDefineToBooleanLiteral("$jscomp.INSTRUMENT_ASYNC_CONTEXT", instrumentAsyncContext);
+  }
+
+  public boolean getInstrumentAsyncContext() {
+    return this.instrumentAsyncContext;
+  }
+
   /** Sets list of libraries to always inject, even if not needed. */
   public void setForceLibraryInjection(Iterable<String> libraries) {
     this.forceLibraryInjection = ImmutableList.copyOf(libraries);
@@ -2907,7 +2902,6 @@ public class CompilerOptions implements Serializable {
         .add("removeAbstractMethods", removeAbstractMethods)
         .add("removeClosureAsserts", removeClosureAsserts)
         .add("removeJ2clAsserts", removeJ2clAsserts)
-        .add("removeUnreachableCode", removeUnreachableCode)
         .add("removeUnusedClassProperties", removeUnusedClassProperties)
         .add("removeUnusedConstructorProperties", removeUnusedConstructorProperties)
         .add("removeUnusedLocalVars", removeUnusedLocalVars)

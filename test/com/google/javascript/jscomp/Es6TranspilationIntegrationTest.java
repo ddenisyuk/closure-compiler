@@ -105,7 +105,9 @@ public final class Es6TranspilationIntegrationTest extends CompilerTestCase {
         PassFactory.builder()
             .setName("convertTypesToColors")
             .setInternalFactory(
-                (c) -> new ConvertTypesToColors(c, SerializationOptions.INCLUDE_DEBUG_INFO))
+                (c) ->
+                    new ConvertTypesToColors(
+                        c, SerializationOptions.builder().setIncludeDebugInfo(true).build()))
             .build());
 
     TranspilationPasses.addEarlyOptimizationTranspilationPasses(passes, compilerOptions);
@@ -154,7 +156,7 @@ public final class Es6TranspilationIntegrationTest extends CompilerTestCase {
 
   @Test
   public void testSpreadLibInjection() {
-    test("var x = [...a];", "var x=[].concat($jscomp.arrayFromIterable(a))");
+    test("var x = [...a];", "var x=[].concat((0, $jscomp.arrayFromIterable)(a))");
     assertThat(getLastCompiler().getInjected()).containsExactly("es6/util/arrayfromiterable");
   }
 
@@ -2012,7 +2014,7 @@ public final class Es6TranspilationIntegrationTest extends CompilerTestCase {
         expected(
             lines(
                 "var i = 'outer';",
-                "var $jscomp$iter$0 = $jscomp.makeIterator([1, 2, 3]);",
+                "var $jscomp$iter$0 = (0, $jscomp.makeIterator)([1, 2, 3]);",
                 // Normalize runs before for-of rewriting. Therefore, first Normalize renames the
                 // `let i` to `let i$jscomp$1` to avoid conficting it with outer `i`. Then, the
                 // for-of rewriting prepends the unique ID `$jscomp$key$m123..456$0` to its declared
@@ -2036,7 +2038,7 @@ public final class Es6TranspilationIntegrationTest extends CompilerTestCase {
     Expected expected =
         expected(
             lines(
-                "var $jscomp$iter$0 = $jscomp.makeIterator([1, 2]);",
+                "var $jscomp$iter$0 = (0, $jscomp.makeIterator)([1, 2]);",
                 // Normalize runs before for-of rewriting. Normalize does not rename the `const i`
                 // if there is no other conflicting `i` declaration. Then, the  for-of rewriting
                 // prepends `$jscomp$key$m123..456$0` to its declared name as it does to all for-of
@@ -2079,7 +2081,7 @@ public final class Es6TranspilationIntegrationTest extends CompilerTestCase {
                     + " function($jscomp$generator$context$m1146332801$2) {",
                 "    switch($jscomp$generator$context$m1146332801$2.nextAddress) {",
                 "      case 1:",
-                "        $jscomp$iter$0 = $jscomp.makeIterator([]);",
+                "        $jscomp$iter$0 = (0, $jscomp.makeIterator)([]);",
                 "        KEY$0$x = $jscomp$iter$0.next();",
                 "      case 2:",
                 "        if (!!KEY$0$x.done) {",
@@ -2093,7 +2095,7 @@ public final class Es6TranspilationIntegrationTest extends CompilerTestCase {
                 "        $jscomp$generator$context$m1146332801$2.jumpTo(2);",
                 "        break;",
                 "      case 4:",
-                "        $jscomp$iter$1 = $jscomp.makeIterator([]);",
+                "        $jscomp$iter$1 = (0, $jscomp.makeIterator)([]);",
                 "        KEY$1$x = $jscomp$iter$1.next();",
                 "      case 6:",
                 "        if (!!KEY$1$x.done) {",
@@ -2121,7 +2123,7 @@ public final class Es6TranspilationIntegrationTest extends CompilerTestCase {
                 "}")),
         expected(
             lines(
-                "var $jscomp$iter$0 = $jscomp.makeIterator([]);",
+                "var $jscomp$iter$0 = (0, $jscomp.makeIterator)([]);",
                 "var KEY$0$x = $jscomp$iter$0.next();",
                 "for (; !KEY$0$x.done; KEY$0$x = $jscomp$iter$0.next()) {",
                 "  var x = KEY$0$x.value;",
@@ -2378,8 +2380,9 @@ public final class Es6TranspilationIntegrationTest extends CompilerTestCase {
         expected(
             lines(
                 "function f(a) {",
+                "  var x;",
                 "  var $jscomp$destructuring$var0 = a;",
-                "  var x = $jscomp$destructuring$var0.x;",
+                "  x = $jscomp$destructuring$var0.x;",
                 "  if (a) {",
                 "    var x$jscomp$0 = 2;",
                 "    return x$jscomp$0;",

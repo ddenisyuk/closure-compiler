@@ -37,7 +37,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import org.jspecify.nullness.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Rewrites a given call to Polymer({}) to a set of declarations and assignments which can be
@@ -46,7 +46,6 @@ import org.jspecify.nullness.Nullable;
 final class PolymerClassRewriter {
   private static final String VIRTUAL_FILE = "<PolymerClassRewriter.java>";
   private final AbstractCompiler compiler;
-  private final boolean propertyRenamingEnabled;
   @VisibleForTesting static final String POLYMER_ELEMENT_PROP_CONFIG = "PolymerElementProperties";
 
   static final DiagnosticType IMPLICIT_GLOBAL_CONFLICT =
@@ -66,10 +65,9 @@ final class PolymerClassRewriter {
   private final Node externsInsertionRef;
   boolean propertySinkExternInjected = false;
 
-  PolymerClassRewriter(AbstractCompiler compiler, boolean propertyRenamingEnabled) {
+  PolymerClassRewriter(AbstractCompiler compiler) {
     this.compiler = compiler;
     this.externsInsertionRef = compiler.getSynthesizedExternsInput().getAstRoot(compiler);
-    this.propertyRenamingEnabled = propertyRenamingEnabled;
   }
 
   static boolean isIIFE(Node n) {
@@ -150,7 +148,7 @@ final class PolymerClassRewriter {
    */
   private Node getNodeForInsertion(Node enclosingScript) {
     if (NodeUtil.isFromTypeSummary(enclosingScript)) {
-      return externsInsertionRef;
+      return compiler.getSynthesizedTypeSummaryInput().getAstRoot(compiler);
     } else {
       return compiler.getNodeForCodeInsertion(null);
     }
@@ -177,7 +175,10 @@ final class PolymerClassRewriter {
         }
         break;
       case SCRIPT:
-        enclosingNode.addChildrenToFront(statements);
+        // If children are added to front, it will cause runtime error in the code because Polymer's
+        // properties will be accessed before the Polymer object is defined. The Polymer object gets
+        // defined in `insertGeneratedDeclarationCodeToGlobalScope`.
+        enclosingNode.addChildrenToBack(statements);
         compiler.reportChangeToChangeScope(NodeUtil.getEnclosingScript(enclosingNode));
         break;
       case CALL:
@@ -344,7 +345,7 @@ final class PolymerClassRewriter {
     // If property renaming is enabled, wrap the properties object literal
     // in a reflection call so that the properties are renamed consistently
     // with the class members.
-    if (propertyRenamingEnabled && cls.descriptor != null) {
+    if (cls.descriptor != null) {
       Node props = NodeUtil.getFirstPropMatchingKey(cls.descriptor, "properties");
       if (props != null && props.isObjectLit()) {
         addPropertiesConfigObjectReflection(cls, props);
@@ -431,7 +432,7 @@ final class PolymerClassRewriter {
     //
     // Also add reflection and sinks for computed properties and complex observers
     // and switch simple observers to direct function references.
-    if (propertyRenamingEnabled && cls.descriptor != null) {
+    if (cls.descriptor != null) {
       convertSimpleObserverStringsToReferences(cls);
       addPropertiesConfigObjectReflection(cls, cls.descriptor);
     }
@@ -474,6 +475,7 @@ final class PolymerClassRewriter {
             .srcrefTreeIfMissing(propertiesLiteral);
     parent.addChildToFront(objReflectCall);
     compiler.reportChangeToEnclosingScope(parent);
+    compiler.ensureLibraryInjected("util/reflectobject", false);
   }
 
   /** Adds an @this annotation to all functions in the objLit. */
@@ -1033,9 +1035,17 @@ final class PolymerClassRewriter {
       block.addChildToBack(setterExprNode);
     }
 
-    block.srcrefTreeIfMissing(externsInsertionRef);
-    Node stmts = block.removeChildren();
-    externsInsertionRef.addChildrenToBack(stmts);
+    Node stmts;
+    if (NodeUtil.isFromTypeSummary(cls.input.getAstRoot(compiler))) {
+      Node typeSummaryInsertionRef = compiler.getSynthesizedTypeSummaryInput().getAstRoot(compiler);
+      block.srcrefTreeIfMissing(typeSummaryInsertionRef);
+      stmts = block.removeChildren();
+      typeSummaryInsertionRef.addChildrenToBack(stmts);
+    } else {
+      block.srcrefTreeIfMissing(externsInsertionRef);
+      stmts = block.removeChildren();
+      externsInsertionRef.addChildrenToBack(stmts);
+    }
 
     compiler.reportChangeToEnclosingScope(stmts);
   }
